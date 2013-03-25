@@ -1,0 +1,37 @@
+<h2>Summary of Actions</h2>
+<table BORDER=1 RULES=ALL FRAME=VOID width="50%">
+  <tr>
+    <th align="center">Action</th>
+    <th align="center">#</th>
+  </tr>
+  <% @log_summary.each do |a, n| %>
+    <tr>
+      <td align="center"><%= a %></td>
+      <td align="center"><%= n %></td>
+    </tr>
+  <% end %>
+</table>
+<h2>Image Points</h2>
+Note: point deletions are NOT shown
+<%= render :partial => 'spy_on_user_points', :locals => {:points => @identification.log_to_points_as_strings} %>
+
+<h2>Log by Timestamp</h2>
+<table width="100%">
+  <tr>
+    <th>Action</th>
+    <th>x</th>
+    <th>y</th>
+    <th>Timestamp</th>
+    <th>Delta t (s)</th>
+  </tr>
+  <% @log_entries.each_with_index do |l, i| %>
+  <tr>
+    <td><%= l[0] %></td>
+    <% coords = l[1].split(',') %>
+    <td><%= '%.0f' % coords.first if coords.length == 2 %></td>
+    <td><%= '%.0f' % coords.last if coords.length == 2 %></td>
+    <td><%= MHit.t_str(Time.at(l[2].slice(0...-3).to_i), @identification.worker.m_hit, '%m/%d/%Y %H:%M:%S') %></td>
+    <td><%= (Time.at(l[2].slice(0...-3).to_i) - Time.at(@log_entries[i + 1][2].slice(0...-3).to_i)).round if i < @log_entries.length - 1 %></td>
+  </tr>
+  <% end %>
+</table>

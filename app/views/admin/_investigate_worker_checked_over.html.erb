@@ -1,0 +1,20 @@
+<% unless @disqualification %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    Fully checked over (either good for our data or disqualified): <input type="checkbox" <% unless @worker.manually_checked_over.nil? %>checked="checked"<% end %> onclick="WorkerManuallyCheckedOver(this.checked)" />
+    <% unless @worker.manually_checked_over.nil? %>(<%= MHit.t_str(@worker.manually_checked_over, MHit::USA) %>)<% end %>
+    <script type="text/javascript">
+      function WorkerManuallyCheckedOver(checked){
+        var r = new Ajax.Request(
+          '/admin/mark_worker_as_manually_checked',
+          {
+            method: 'post',
+            parameters: 'worker_id=<%= @worker.id %>&checked=' + checked,
+            onComplete: function(response){
+              alert('worker manually checked is now ' + checked);
+            }
+          }
+        );
+      }
+    </script>
+  </div>
+<% end %>

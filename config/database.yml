@@ -1,0 +1,16 @@
+defaults: &defaults
+  adapter: mysql
+  username: root
+  reconnect: false
+  password:
+  host: localhost
+  pool: 5
+  encoding: utf8
+
+development:
+  <<: *defaults
+  database: adkdacsl_dev
+
+production:
+  <<: *defaults
+  database: adkdacsl_prod

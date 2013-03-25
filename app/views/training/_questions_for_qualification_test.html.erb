@@ -1,0 +1,82 @@
+<table width="100%" id="questions" cellspacing="0" style="display:none; margin-top:10px;">
+<%
+  full_phenotype = @worker_for_this_hit.meaningful? ? 'tumor cells' : 'objects of interest'
+  short_phenotype = @worker_for_this_hit.meaningful? ? 'tumor' : 'object'
+%>
+  <tr>
+    <td colspan="2">
+      Please answer the below questions. Once you answer these questions, you
+      will be qualified to help identify <%= full_phenotype %>s.
+    </td>
+  </tr>
+  <tr><td colspan="2"><br /></td></tr>
+  <%
+    question_objects = []
+    question_objects << {:question => 'You should adjust the magnification in order to...', :answers => [
+        ['Make a prettier picture', false],
+        ["Make the #{short_phenotype}s exactly 10 pixels across", false],
+        ["Find #{short_phenotype}s and make clicks as close to the center as possible", true]
+      ]}
+    question_objects << {:question => "When you are clicking on #{full_phenotype}, how many times do you click on the #{short_phenotype}?", :answers => [
+        ['Once', true],
+        ['Twice', false],
+        ["As many dots as you can fit inside the #{short_phenotype}", false]
+      ]}
+    question_objects << {:question => 'When you incorrectly click on an area, you should...', :answers => [
+        ['Give up the HIT', false],
+        ['Reload the page', false],
+        ['Use the right mouse button', true]
+      ]}
+    if @worker_for_this_hit.meaningful?
+       question_objects << {:question => "What will happen if you don't accurately click on the #{short_phenotype}?", :answers => [
+          ["Scientists who are depending on you to identify tumors will not have accurate results", false],
+          ['Your HIT may be rejected', false],
+          ["You will not be allowed to do additional HITs with us", false],
+          ['All of the above.', true]
+        ]}
+    else
+       question_objects << {:question => "What will happen if you don't accurately click on the objects?", :answers => [
+          ['Your HIT may be rejected', false],
+          ["You will not be allowed to do additional HITs", false],
+          ['All of the above.', true]
+        ]}
+    end
+      question_objects << {:question => "Your HIT will be rejected if...", :answers => [
+        ["You do not click on all the #{short_phenotype}s", false],
+        ["You don't click in the center of the #{short_phenotype}", false],
+        ["You click multiple times on the same #{short_phenotype} or on things that are NOT #{short_phenotype}s", false],
+        ['All of the above.', true]
+      ]}
+    question_objects << {:question => "As part of this HIT, how many images will you have the chance to identify assuming you correctly label the #{short_phenotype}s? ", :answers => [
+        ["As many as you want within a #{BmomMTurk::DEFAULT_ASSIGNMENT_DURATION / 3600}hr period (as long as you complete each image within #{Identification::ExpirationTime / 60} minutes)", true],
+        ["You can label up to 4 more images", false],
+        ["You must submit since you can only label one image", false]
+      ]}
+    if @worker_for_this_hit.shredded?
+      question_objects << {:question => "Please acknowledge once more that you know you are working on a test system and that your work will not be counted.", :answers => [
+          ["I acknowledge", true]
+        ]}
+    end
+    question_objects.each_with_index do |qaobj, i|
+%>
+  <%= render :partial => 'question_for_test', :locals => {
+    :n => i,
+    :question => qaobj[:question],
+    :answers => qaobj[:answers]
+  } %>
+<% end %>
+  <tr>
+    <td colspan="2" align="center">
+      <input 
+        id="qualify_worker_button" 
+        type="button" 
+        value=" Begin Task "
+        disabled="true" 
+        onclick="qualification_test.QualifyWorker();" />
+      <span id="qualify_worker_button_submit_spinner"></span>
+    </td>
+  </tr>
+</table>
+<script type="text/javascript">
+  var qualification_test = new QualificationTest(<%= question_objects.length %>, <%= @worker_for_this_hit.id %>, "<%= @worker_for_this_hit.m_hit.encrypted_id %>", "<%= @worker_for_this_hit.mturk_worker_id %>", "<%= @worker_for_this_hit.mturk_assignment_id %>");
+</script>

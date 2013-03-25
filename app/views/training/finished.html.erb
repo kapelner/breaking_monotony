@@ -1,0 +1,7 @@
+<div style="padding: 5px; border: 1px solid black;">
+  Thank you for helping to label <%= pluralize(@worker_for_this_hit.identifications.length, 'image') %>!<br />
+  <br />
+  Please click below to be paid:<br />
+  <br />
+  <%= render 'mturk_form' %>
+</div>

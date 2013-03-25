@@ -1,0 +1,71 @@
+<% full_phenotype = @worker_for_this_hit.meaningful? ? 'tumor cells' : 'objects of interest' %>
+<div id="finished_message" style="padding:20px; width: 450px; border: 1px solid black; font-size:18px;">
+  <% if @worker_for_this_hit.meaningful? %>
+    <table width="100%" style="text-align:left;">
+      <tr>
+        <td width="70%">
+          Thanks for helping to locate the <%= full_phenotype %> in this image! We really appreciate your help.
+          <br />
+          <br />
+          Your work will be reviewed in the next 15-30 minutes and you will be paid.
+          <br />
+          <br />
+          You may do another image of similar difficulty. <strong>Click on the button below:</strong>
+        </td>
+        <td valign="top">
+          <img src="/images/smiling_doctor.jpg" border="0" width="150" height="198" />
+        </td>
+      </tr>
+    </table>
+  <% elsif @worker_for_this_hit.shredded? %>
+    <div style="text-align:left;">
+      <div style="color:red; font-weight:bold; margin-bottom:10px;">
+        Your points were not saved because we are testing our system.
+      </div>
+      You may do another image of similar difficulty. <strong>Click on the button below:</strong>
+      <br />
+    </div>
+  <% else %>
+    <div style="text-align:left;">
+      Your work will be reviewed in the next 15-30 minutes and you will be paid.
+      <br />
+      <br />
+      You may do another image of similar difficulty. <strong>Click on the button below:</strong>
+      <br />
+    </div>
+  <% end %>
+  <%= link_to raw(%Q|<img src="/images/big_play_button_#{'%.2f' % @identification.wage}.jpg" height="225" weight="225" border="0" />|),
+    {:action => :train_another_image_button, :hit_id => @worker_for_this_hit.m_hit.encrypted_id,
+    :workerId => @worker_for_this_hit.mturk_worker_id, :assignmentId => @worker_for_this_hit.mturk_assignment_id},
+    {:id => 'big_blue_continue_button', :onclick => "try{$('done_and_submit_to_mturk_button').hide();} catch(e){}"} %>
+  <br />
+  <br />
+  <strong>Note: you do not have to go through training again</strong>
+  <br />
+  <br />
+  If you are finished, you can click below:
+  <input type="button"
+    id="submit_button"
+    onclick="javascript: press_finish_button();"
+    value=" No more tasks. I am finished. Pay me <%= number_to_currency(@worker_for_this_hit.total_earnings) %>. " />
+</div>
+<script type="text/javascript">
+  function press_finish_button(){
+    //first confirm that the user really wants to submit forever (only show this if there are other options)
+    if (!confirm('Are you sure you do not want to do anymore tasks?\n\nPress "Cancel" to continue doing tasks.')){
+      return;
+    }
+    //now hide the big blue continue button:
+    try {
+      $('big_blue_continue_button').hide();
+    }
+    catch (e){}
+    //also try to hide the submit my points and go on button:
+    try {
+      $('submit_button').hide();
+    }
+    catch (e){}
+    //now move them to the survey page
+    document.location = '/training/survey/<%= @worker_for_this_hit.id %>';
+  }
+</script>

@@ -1,0 +1,99 @@
+/* For the website */
+
+body {
+  background-color: white;
+}
+
+div#main {
+  background-color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+/* For training */
+
+div#qualification_test, div#warning_message {
+  text-align: center; 
+  padding: 10px; 
+  border: 1px solid black;
+  width: 500px;
+}
+
+div#warning_message {
+  height: 400px;
+}
+
+div#video_caption {
+  margin: 5px; 
+  padding: 5px; 
+  width: 400px; 
+  font-size: 12px;
+}
+
+table#training_page_contents {
+  text-align: center; 
+  padding: 10px; 
+  border: 1px solid black;
+}
+
+div#introductory_video {
+  padding: 10px;
+}
+
+div#special_instructions {
+    width: 450px; 
+    margin: 5px; 
+    padding: 5px; 
+    border: 1px solid rgb(200,200,200);
+}
+
+td.selected_phenotype {
+    background-color: rgb(255,255,100);
+}
+
+td.phenotype {
+   text-align: center;
+}
+
+div.magnified_phenotype {
+    background-color: white;
+    position: absolute; 
+    padding: 10px; 
+    border: 1px solid black;
+    margin-left: 150px;
+}
+
+span#total_container {
+  color: white;
+  background-color: black; 
+}
+
+span#total_positive_points {
+    color: rgb(150,150,255);
+}
+
+span#total_points {
+   color: rgb(150,255,150); 
+}
+
+span#total_negative_points {
+  color: rgb(255,150,150);  
+}
+
+div#not_firefox_warning {
+    padding: 10px;
+    margin: 10px;
+    border: 1px solid black;
+    color: rgb(200,0,0);
+    background-color: rgb(200,200,200);
+}
+
+div#shredded_message_during_training {
+    margin: 5px;
+    padding: 5px;
+    border: 1px solid red;
+    width: 550px;
+    color: red;
+    font-weight: bold;
+    font-size: 18px;
+}

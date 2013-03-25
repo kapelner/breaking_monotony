@@ -1,0 +1,198 @@
+<%= render :partial => 'investigate_worker_title' %>
+<%= render :partial => 'investigate_worker_checked_over' %>
+<%= render :partial => 'investigate_worker_disqualification' %>
+<%= render :partial => 'investigate_worker_admin_comments' %>
+
+<div style="border: 1px solid black; padding:5px; margin: 5px;">
+<% if @worker.identifications.empty? %>
+  <h3>(No identifications)</h3>
+<% else %>
+  <h3>Identifications (<%= @worker.all_done_identifications.length %> done)</h3>
+  <% if @worker.payment_outcome %>
+  <h4>Payment outcome: <%= @worker.payment_outcome.to_str %> at <%= MHit.t_str(@worker.payment_outcome.created_at, @worker.m_hit) %></h4>
+  <% end %>
+  <% unless @worker.pushed_submit_to_mturk? %>
+    <h5>Last action: <%= @worker.time_since_last_action %> min ago</h5>
+  <% end %>
+  <table width="100%">
+    <tr>
+      <th>ID</th>
+      <th>Set # / Wage</th>
+      <th>Prec / Rec / F</th>
+      <th>Accepted?</th>
+      <th>Submitted</th>
+      <th>Duration (min)</th>
+      <th>Longest Break (s)</th>
+      <th>Pts Deleted</th>
+      <th>Num Zooms</th>
+      <th>Used Zoom-in initially</th>
+      <th>Used Zoom-out at the end</th>
+      <th>log</th>
+      <th>Delete?</th>
+    </tr>
+    <% @worker.identifications.sort{|a, b| a.set_number <=> b.set_number}.each do |i| %>
+      <tr>
+        <td><%= i.id %></td>
+        <% if i.untouched? %>
+           <td colspan="9" align="center"><span style="color:gray;">---------------------------------------- untouched ----------------------------------------</span></td>
+        <% else %>
+          <td align="center"><%= i.set_number %> / <%= number_to_currency(i.wage) %></td>
+          <td align="center" style="font-size:8px;"><%= link_to i.accuracy_to_s, {:action => :accuracy_statistics, :id => i.id}, {:target => '_blank'} if i.done? %></td>
+          <td align="center"><%= i.not_accurate_enough? ? 'No' : 'Yes' %></td>
+          <td align="center"><%= MHit.t_str(i.submitted_at, @worker.m_hit) %></td>
+          <td align="center">
+            <% if i.done? %>
+              <%= i.duration_to_s %>
+              <span>(<%= i.duration_save_longest_break_to_s %>)</span>
+            <% end %>
+          </td>
+          <td align="center"><%= i.longest_break if i.done? %></td>
+          <td align="center"><%= i.num_points_deleted if i.done? %></td>
+          <td align="center"><%= i.num_zooms if i.done? %></td>
+          <td align="center"><%= (i.used_magnification_in_the_beginning_wisely? ? 'Yes' : 'No') if i.done? %></td>
+          <td align="center"><%= (i.used_magnification_at_the_end_wisely? ? 'Yes' : 'No') if i.done? %></td>
+          <td align="center"><%= link_to 'log', {:action => :hit_log, :id => i.id}, {:target => '_blank'} if i.log %></td>
+        <% end %>
+        <td align="center"><%= link_to 'x', {:action => :dispose_identification, :id => i.id, :worker_id => @worker.id}, :method => :post, :confirm => "Are you sure?" %></td>
+      </tr>
+    <% end %>
+  </table>
+<% end %>
+<%
+  identifications_done = @worker.all_done_identifications
+  total_time_sec = identifications_done.inject(0){|sum, h| sum + h.duration}
+  hourly_wage = @worker.total_earnings / (total_time_sec / 3600.to_f)
+  if total_time_sec > 0 and !identifications_done.empty?
+%>
+<br />
+Total earnings: <%= number_to_currency(@worker.total_earnings) %><br />
+Total time training: <%= '%.1f' % (total_time_sec / 60.to_f) %>min<br />
+Hourly wage: <%= number_to_currency('%.2f' % hourly_wage) %>
+<% end %>
+</div>
+
+<% all_viewings = @worker.m_hit.m_hit_views.select{|mhv| mhv.ip_address == @worker.ip_address} %>
+<%= render :partial => 'worker_timeline', :locals => {:all_viewings => all_viewings} %>
+<div>This assignment: <%= @worker.mturk_assignment_id %></div>
+
+<% if @worker.qualification %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    <h3>Qualification</h3>
+    <table width="100%">
+      <tr>
+        <th>Qualified At</th>
+        <th>Delete? (WARNING: deletes all hits as well)</th>
+      </tr>
+      <tr>
+        <td><%= MHit.t_str(@worker.qualification.created_at, @worker.m_hit) %></td>
+        <td align="center"><%= link_to 'x', {:action => :delete_qualification, :id => @worker.qualification.id}, :method => :post, :confirm => 'Are you sure?' %></td>
+      </tr>
+    </table>
+  </div>
+<% end %>
+<% unless @worker.video_watchings.empty? %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    <h3>Video Watchings (<%= @worker.video_watchings.length %>)</h3>
+    <table width="100%">
+      <tr>
+        <th>Recorded At</th>
+        <th>Time Elapsed in Video (sec)</th>
+        <th>Video Event (if applicable)</th>
+      </tr>
+      <% @worker.video_watchings.each do |hv| %>
+        <tr>
+          <td><%= MHit.t_str(hv.created_at, @worker.m_hit, '%m/%d %H:%M:%S') %></td>
+          <td><%= hv.elapsed.round %></td>
+          <td><%= hv.event_type %></td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
+<% end %>
+<% if @worker.color_blindness_test %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    <h3>Worker Information</h3>
+    <table width="100%" <% if @worker.color_blindness_test.colorblind? %>style="background-color:rgb(255,220,220);"<% end %>>
+      <tr>
+        <th># in box</th>
+        <th>Trouble RG/BY?</th>
+        <th>Age Inappropriate?</th>
+        <th>Gender</th>
+        <th>Age</th>
+        <th>Filled Out Survey</th>
+        <th>Delete?</th>
+      </tr>
+      <tr>
+        <td><%= @worker.color_blindness_test.number_in_box %></td>
+        <td><%= @worker.color_blindness_test.trouble_red_green? ? 'Y' : 'N' %>/<%= @worker.color_blindness_test.trouble_blue_yellow? ? 'Y' : 'N' %></td>
+        <td><%= @worker.color_blindness_test.too_young_or_too_old? ? 'Yes' : 'No' %></td>
+        <td><%= @worker.color_blindness_test.male_female_string %></td>
+        <td><%= @worker.color_blindness_test.age %></td>
+        <td><%= MHit.t_str(@worker.color_blindness_test.created_at, @worker.m_hit) %></td>
+        <td align="center"><%= link_to 'x', {:action => :delete_worker_information, :id => @worker.color_blindness_test.id, :worker_id => @worker.color_blindness_test.id}, :method => :post, :confirm => "Are you sure?" %></td>
+      </tr>
+    </table>
+  </div>
+<% end %>
+<% unless all_viewings.empty? %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    <h3>Hit Viewings (<%= all_viewings.length %>)</h3>
+    <table width="100%">
+      <tr>
+        <th>HIT ID</th>
+        <th>Viewed At</th>
+      </tr>
+      <% all_viewings.each do |hv| %>
+        <tr>
+          <td style="font-size:8px;"><%= hv.m_hit.mturk_hit_id %></td>
+          <td><%= MHit.t_str(hv.created_at, @worker.m_hit) %></td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
+<% end %>
+<% if @worker.worker_survey %>
+  <div style="border: 1px solid black; padding:5px; margin: 5px;">
+    <h3>Worker Survey</h3>
+    <table width="100%">
+      <tr>
+        <th>enjoyment</th>
+        <th>purpose</th>
+        <th>accomplishment</th>
+        <th>meaningful</th>
+        <th>recognition</th>
+        <th>comments</th>
+        <th>Time taken (s)</th>
+      </tr>
+        <tr>
+          <td><%= @worker.worker_survey.enjoyment %></td>
+          <td><%= @worker.worker_survey.purpose %></td>
+          <td><%= @worker.worker_survey.accomplishment %></td>
+          <td><%= @worker.worker_survey.meaningful %></td>
+          <td><%= @worker.worker_survey.recognition %></td>
+          <td><%= @worker.worker_survey.comments %></td>
+          <td><%= @worker.worker_survey.time_taken %></td>
+        </tr>
+    </table>
+  </div>
+<% end %>
+<div style="border: 1px solid black; padding:5px; margin: 5px;">
+  <h3>IP Request tracking</h3>
+  <div id="worker_tracking" style="padding:20px;"></div>
+</div>
+<script type="text/javascript">
+  Event.observe(window, 'load', function(){
+    $("worker_tracking").update(spinnerHTMLforspanssmall);
+    var r = new Ajax.Request(
+      '/admin/investigate_worker_tracks',
+      {
+        method: 'post',
+        //make sure to add all the data:
+        parameters: 'id=<%= @worker.id %>',
+        onComplete: function(response){
+          $("worker_tracking").update(response.responseText);
+        }
+      }
+    );
+  });
+</script>

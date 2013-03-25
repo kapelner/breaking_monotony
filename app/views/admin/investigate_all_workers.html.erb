@@ -1,0 +1,46 @@
+<h3>Investigate All Workers (<%= @workers.length %>)</h3>
+<table width="100%">
+  <tr>
+    <th>ID</th>
+    <th>Ver #</th>
+    <!--<th>Checked</th>-->
+    <th>MTurk WID</th>
+    <% unless params[:blind] %>
+      <th>Treatment</th>
+      <th>Age</th>
+      <th>Gender</th>
+    <% end %>
+    <th>Participated Until</th>
+    <th>Hits done</th>
+    <th>Earnings</th>
+    <th>Avg F</th>
+    <th>Avg time / training</th>
+    <th>Email <input type="checkbox" onclick="javascript: UnSlashCheckAll(this.checked);" /></th>
+  </tr>
+  <% @workers.each do |w| %>
+    <tr style="background-color:<% if @disqualified_ids_hash[w.mturk_worker_id] %>rgb(255,220,200);<% end %><% if w.manually_checked_over %>rgb(220,255,220);<% end %>">
+      <td><%= link_to(w.id, {:action => :investigate_worker, :id => w.id, :blind => true}, {:target => '_blank', :style => (w.unpaid? and w.pushed_submit_to_mturk?) ? 'color:red;' : ''}) %></td>
+      <td><%= w.m_hit.version_number %></td>
+      <!--<td><%= w.manually_checked_over.nil? ? '' : 'Y' %></td>-->
+      <td><%= link_to(w.mturk_worker_id, {:action => :investigate_worker, :id => w.id, :blind => true}, {:target => '_blank', :style => (w.unpaid? and w.pushed_submit_to_mturk?) ? 'color:red;' : ''}) %><%- if w.pushed_submit_to_mturk? -%>*<% end %><%= (w.unpaid? and w.pushed_submit_to_mturk?) ? '~' : '' %></td>
+      <% unless params[:blind] %>
+        <td><%= w.m_hit.experimental_country_to_text %>-<%= w.experimental_group %></td>
+        <td><%= w.color_blindness_test.age if w.color_blindness_test %></td>
+        <td><%= w.color_blindness_test.male_female_string if w.color_blindness_test %></td>
+      <% end %>
+      <td><%= w.got_up_to %></td>
+      <% ids_done = w.all_done_identifications %>
+      <td><%= ids_done.length if w.qualification %></td>
+      <td><%= number_to_currency(w.total_earnings) if w.qualification %></td>
+      <td><% unless ids_done.empty? %><%= '%.1f' % (ids_done.inject(0){|sum, h| sum + h.f_measure * 100} / ids_done.length) %>%<% end %></td>
+      <td>
+        <% unless ids_done.empty? %>
+          <% avg_duration = (ids_done.inject(0){|sum, h| sum + h.duration} / ids_done.length.to_f).round %>
+          <%= '%.1f' % (avg_duration / 60.to_f) %>min
+        <% end %>
+      </td>
+      <td><input type="checkbox" worker_id="<%= w.mturk_worker_id %>" class="worker_send_checkbox"/></td>
+    </tr>
+  <% end %>
+</table>
+<%= render :partial => 'email_workers' %>

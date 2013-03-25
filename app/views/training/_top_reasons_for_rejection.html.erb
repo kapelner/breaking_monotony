@@ -1,0 +1,12 @@
+<%= link_to 'Top Reasons HITs are Rejected', 'javascript: void(0);',
+  {:onclick => "$('top_reasons').toggle();"} %>
+<div id="top_reasons">
+  <% cap_phenotype = @worker_for_this_hit.meaningful? ? 'Tumor' : 'Object' %>
+  <% low_phenotype = @worker_for_this_hit.meaningful? ? 'tumor' : 'object' %>
+  <ol>
+    <li><%= cap_phenotype %>s were not clicked on at all.</li>
+    <li><%= cap_phenotype %>s were marked multiple times. There should only be one unique click per <%= low_phenotype %>.</li>
+    <li><%= cap_phenotype %>s were not marked in their centers. They should be marked in the centers.</li>
+    <li>Too many <%= low_phenotype %>s were missed (in the case of the goal being all <%= low_phenotype %>s).</li>
+  </ol>
+</div>

@@ -1,0 +1,33 @@
+<h3>Workers disqualified from dataset</h3>
+<div>
+  <% if @ddws.empty? %>
+    (no disqualifications yet)
+  <% else %>
+    <table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+      <tr>
+        <th>Level</th>
+        <th>Worker ID</th>
+        <th>MTurk Worker ID</th>
+        <th>Up to</th>
+        <th>Error Code</th>
+        <th>Reason</th>
+        <th align="center">Disqualifed At</th>
+        <th align="center">By</th>
+        <th align="center">Delete?</th>
+      </tr>
+      <% @ddws.sort{|a, b| a.level <=> b.level}.each do |ddw| %>
+        <tr>
+          <td><%= ddw.level %></td>
+          <td><%= link_to ddw.worker.id, :action => :investigate_worker, :id => ddw.worker.id if ddw.worker %></td>
+          <td><%= ddw.mturk_worker_id %></td>
+          <td><%= ddw.worker.got_up_to %></td>
+          <td><%= ddw.error_code %></td>
+          <td><%= ddw.reason %></td>
+          <td align="center"><%= MHit.t_str(ddw.created_at, MHit::USA) %></td>
+          <td align="center"><%= ddw.user.fullname %></td>
+          <td align="center"><%= link_to 'x', {:action => :delete_disqualified_data_from_worker, :id => ddw.id}, {:confirm => 'Are you sure?'} %></td>
+        </tr>
+      <% end %>
+    </table>
+  <% end %>
+</div>

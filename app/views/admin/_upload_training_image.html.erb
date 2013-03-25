@@ -1,0 +1,12 @@
+<div>
+  <h3>Upload a Training Image</h3>
+  <form method="post"
+        enctype="multipart/form-data"
+        action="/admin/add_image">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>" />
+    <input type="file" name="file" style="width:300px;" /><br />
+    W x H: <input type="text" name="width" style="width:30px;" value="800" /> x <input type="text" name="height" style="width:30px;" value="800" /><br />
+    Phenotype: <%= select_tag(:phenotype_id, options_for_select([[nil, nil]] + @phenotypes.map{|p| [p.name, p.id]})) %><br />
+    <input type="submit" value=" Add Image " />
+  </form>
+</div>

@@ -1,0 +1,36 @@
+Thanks for all of your work. In order to improve our HIT, please complete the following OPTIONAL feedback form.<br />
+<br />
+If you do not want to fill in the survey, please click here: <%= render 'mturk_form' %>
+<br /><br />
+Please rate how much you agree/disagree with the following statements (where 1-strongly disagree, 5-strongly agree):<br />
+<br />
+<div style="text-align: left; padding:10px; border: solid 1px black; width: 650px;">
+  <%= form_tag do %>
+    <input type="hidden" name="id" value="<%= @worker_for_this_hit.id %>" />
+      <% [
+        ['enjoyment', "The task was fun/enjoyable"],
+        ['purpose', "I liked that the task seemed to be useful and had a good purpose"],
+        ['accomplishment', "I felt good completing the task"],
+        ['meaningful', "The task seemed a lot more meaningful than the average MTurk HITs"],
+        ['recognition', "The task was well-designed and respected my efforts and work more than the average MTurk HITs"]
+      ].each do |code, question_text| %>
+        <%= question_text %>
+        <br />
+        <table>
+          <tr>
+            <% 1.upto(5) do |score| %>
+              <td>
+                <input type="radio" name="<%= code %>" value="<%= score %>" id="score_<%= code %>_<%= score %>" />
+                <label for="score_<%= code %>_<%= score %>"><%= score %></label>
+              </td>
+            <% end %>
+          </tr>
+        </table>
+        <br />
+      <% end %>
+    Any other comments:<br /><br />
+    <textarea name="comments" cols="80" rows="3"></textarea>
+    <br /><br />
+    <input type="submit" value=" Submit my survey " />
+  <% end %>
+</div>

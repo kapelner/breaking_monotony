@@ -1,0 +1,29 @@
+<div>
+  <h3>Create experimental HIT sets</h3>
+  Current wage schedule: <%= MHit::WAGES.map{|wage| number_to_currency(wage)}.join(', ') %>, ...
+  unlimited thereafter at <%= number_to_currency(MHit::WAGES.last) %><br />
+  <br />
+  <!--
+  <form method="post" action="/admin/create_hits">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>" />
+    <div>
+      We are currently in <%= Rails.env.development? ? "sandbox mode. Have no fear!" : "production mode. Hits will be created on the live site! Make sure the MTurk account is sufficiently funded!!!" %>
+    </div>
+    <br />
+    <table>
+      <tr>
+        <th>Country</th>
+        <th>Number HITs</th>
+      </tr>
+      <tr>
+        <td align="center">US</td>
+        <td align="center"><input type="text" name="n_US" value="1" style="width:25px;" /></td>
+      </tr>
+      <tr>
+        <td align="center">IN</td>
+        <td align="center"><input type="text" name="n_IN" value="" style="width:25px;" /></td>
+      </tr>
+    </table>
+    <input type="submit" value=" Create! " />
+  </form>-->
+</div>

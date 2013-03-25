@@ -1,0 +1,7 @@
+<h2>Worker <%= @worker.id %>
+  <% unless params[:blind] %>
+  / <%= @worker.m_hit.experimental_country_to_text %>-<%= @worker.experimental_group %><%- if @worker.color_blindness_test -%>--<%= @worker.color_blindness_test.age %>:<%= @worker.color_blindness_test.male_female_string %><%- end -%>
+  <% end %>
+  / <%= @worker.mturk_worker_id %>
+  / <%= link_to @worker.ip_address, "http://www.ip2location.com/free.asp?ipaddresses=#{@worker.ip_address}", :target => '_blank' %>
+  / Up-to: <%= @worker.got_up_to %></h2>

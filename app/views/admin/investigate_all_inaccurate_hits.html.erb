@@ -1,0 +1,21 @@
+<div>
+  (<%= @inaccurate_hits.length %> total inaccurate tasks)<br />
+  <table width="100%">
+    <tr>
+      <th>Identification ID</th>
+      <th>MTurk ID</th>
+      <th>Worker ID</th>
+      <th>Accuracy</th>
+      <th>Submitted</th>
+    </tr>
+    <% @inaccurate_hits.each do |i| %>
+      <tr>
+        <td><%= i.id %></td>
+        <td><%= i.worker.m_hit.mturk_hit_id %></td>
+        <td><%= link_to(i.worker.id, {:action => :investigate_worker, :id => i.worker.id}, :target => '_blank') %></td>
+        <td><%= link_to i.accuracy_to_s, {:action => :accuracy_statistics, :id => i.id}, {:target => '_blank'} %></td>
+        <td style="font-size:7px;"><%= MHit.t_str(i.submitted_at, i.worker.m_hit) %></td>
+      </tr>
+    <% end %>
+  </table>
+</div>

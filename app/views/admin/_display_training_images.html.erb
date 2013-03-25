@@ -1,0 +1,51 @@
+<h3>All Images (<%= ProjectParam.getvals.num_images %> in experiment, <%= Image.count %> total)</h3>
+<div>
+  Num Images in experiment: 
+  <input type="text" id="num_images_in_experiment" maxlength="2" style="width:20px;" value="<%= ProjectParam.getvals.num_images %>" />
+  <input type="button" value=" Change " onclick="ChangeNumImagesInExperiment()" />
+</div>
+<br />
+<div id="consistency_message" style="color:<%= Image.consistent_set_message == Image::CONSISTENT_MESSAGE ? 'green' : 'red' %>;">
+  <%= Image.consistent_set_message %>
+</div>
+<br />
+<table width="100%">
+  <tr>
+    <th>Order</th>
+    <th>Image</th>
+    <th>Dimensions</th>
+    <th>ID#</th>
+    <th>Filename</th>
+    <th>Truth set?</th>
+    <th>Phenotype</th>
+    <th>Delete?</th>
+  </tr>
+<% @images.sort{|a, b| (a.order.nil? ? 999 : a.order) <=> (b.order.nil? ? 999 : b.order)}.each do |i| %>
+  <tr>
+    <td>
+      <input id="image_order_<%= i.encrypted_id %>" type="text" value="<%= i.order %>" style="width:30px;" />
+      <input type="button" value=" Update " onclick="ChangeImageOrder('<%= i.encrypted_id %>')" />
+    </td>
+    <td><img src="<%= url_for :controller => :files, :action => :get_training_image, :id => i.encrypted_id %>"
+      border="2"
+      width="<%= i.display_width %>"
+      height="<%= i.display_height %>" /></td>
+    <td><%= i.width %> x <%= i.height %></td>
+    <td><%= i.id %></td>
+    <td><%= i.filename %></td>
+    <td>
+      <% if i.truth_points.nil? %>
+        No
+      <% else %>
+        <%= i.identifications.empty? ? 'Yes' : link_to('Yes', {:action => :accuracy_statistics, :id => i.identifications.first.encrypted_id}, {:target => :blank}) %>
+        <%= link_to '(dump)', 'javascript:void(0);', :onclick => "$('dump_#{i.id}').toggle(); $('dump_textarea_#{i.id}').select();" %>
+        <div id="dump_<%= i.id %>" style="display:none;">
+          <textarea width="80" id="dump_textarea_<%= i.id %>"><%= i.truth_points.join(';') %></textarea>
+        </div>
+      <% end %>
+    </td>
+    <td><%= i.phenotype.name %></td>
+    <td><%= link_to 'x', :action => :delete_image, :id => i.encrypted_id if i.identifications.empty? %></td>
+  </tr>
+<% end %>
+</table>

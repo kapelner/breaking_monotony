@@ -1,0 +1,32 @@
+<div id="warning_message">
+  <center>
+    <% if @want_to_leave.nil? %>
+      <h2>Warning Message</h2>
+      <div style="text-align: left;">
+        We are testing our system. You will still be paid but the work that you provide will not be looked at.
+        Please acknowledge this below.
+      </div>
+      <br /><br />
+      <form action="/training/acknowledge_work_not_counted">
+        <input type="hidden" name="worker_id" value="<%= params[:worker_id] %>" />
+          <input type="submit" value=" I acknowledge that my work will not be looked at. " id="acknowdlege_button" />
+          <input type="button" value=" I want to leave. " onclick="javascript: want_to_leave();" />
+      </form>  
+      <script type="text/javascript">
+        function want_to_leave(){
+          $('acknowdlege_button').hide();
+          var r = new Ajax.Request(
+            '/training/worker_wants_to_leave',
+            {
+              method: 'post',
+              parameters: 'worker_id=' + <%= params[:worker_id] %>
+            }
+          );
+          alert('Please click \'Leave HIT\' on top.');
+        }
+      </script>
+    <% else %>
+      Please return this HIT. Thank you.
+    <% end %>
+  </center>
+</div>

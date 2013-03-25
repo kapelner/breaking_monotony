@@ -1,0 +1,28 @@
+<div id="training_page">
+  <table id="training_page_contents" cellpadding="2">
+    <tr>
+      <td></td>
+      <td align="center">
+        <input type="button"
+          id="submit_button"
+          onclick="training.submit_points_via_form();"
+          value=" Submit this task and do another task for more pay " />
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td valign="top">
+        <%= render :partial => 'directions_and_scoreboard' %>
+      </td>
+    </tr>
+    <tr>
+      <td valign="center">
+        <%= render :partial => 'all_phenotypes' %>
+      </td>
+      <td valign="center">
+        <%= render :partial => 'image_and_preview_and_canvas' %>
+      </td>
+    </tr>
+  </table>
+  <%= render :partial => 'training_javascript' %>
+</div>

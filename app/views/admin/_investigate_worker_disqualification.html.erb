@@ -1,0 +1,49 @@
+<div style="border:1px solid black; padding:5px; margin:5px; <% if @disqualification %>background-color:rgb(255,200,200);<% end %>">
+  <% if @disqualification %>
+    <table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+      <tr>
+        <th>Level</th>
+        <th>Error Code</th>
+        <th>Reason</th>
+        <th align="center">Disqualifed At</th>
+        <th align="center">By</th>
+        <th align="center">Delete?</th>
+      </tr>
+      <tr>
+        <td><%= @disqualification.level %></td>
+        <td><%= @disqualification.error_code %></td>
+        <td><%= @disqualification.reason %></td>
+        <td align="center"><%= MHit.t_str(@disqualification.created_at, MHit::USA) %></td>
+        <td align="center"><%= @disqualification.user.fullname %></td>
+        <td align="center"><%= link_to 'x', {:action => :delete_disqualified_data_from_worker, :id => @disqualification.id}, {:confirm => 'Are you sure?'} %></td>
+      </tr>
+    </table>
+  <% else %>
+    <h3>Add new disqualification</h3>
+    <% form_for :disqualified_data_from_worker, :url => {:action => :create_disqualified_data_from_worker} do |f| %>
+      <%= f.hidden_field :mturk_worker_id, :value => @worker.mturk_worker_id %>
+      <table>
+        <tr>
+          <td valign="top">Reason:</td>
+          <td><%= f.text_area :reason, :style => 'width:600px; height:60px;' %></td>
+        </tr>
+        <tr>
+          <td valign="top">Level:</td>
+          <td>
+            <input type="radio" name="level" id="level_1" value="<%= DisqualifyDataFromWorker::ALL_DATA_LEVEL %>" />
+            <label for="level_1"><%= DisqualifyDataFromWorker::Explanations[DisqualifyDataFromWorker::ALL_DATA_LEVEL] %></label><br />
+            <input type="radio" name="level" id="level_2" value="<%= DisqualifyDataFromWorker::QUANTITATIVE_DATA_LEVEL %>" />
+            <label for="level_2"><%= DisqualifyDataFromWorker::Explanations[DisqualifyDataFromWorker::QUANTITATIVE_DATA_LEVEL] %></label>
+          </td>
+        </tr>
+        <tr>
+          <td>Error Code:</td>
+          <td><%= f.text_field :error_code %></td>
+        </tr>
+        <tr>
+          <td colspan="2"><%= f.submit ' Disqualify this worker ' %></td>
+        </tr>
+      </table>
+    <% end %>
+  <% end %>
+</div>

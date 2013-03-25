@@ -1,0 +1,100 @@
+<h2>Accuracy Statistics</h2>
+<div>
+  <table>
+    <tr>
+      <td colspan="2">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Set # / Wage</th>
+            <th>Experimental Parameters</th>
+            <th>Submitted</th>
+            <th>Training Duration</th>
+            <th>log</th>
+            <th>Gender</th>
+            <th>Age</th>            
+          </tr>
+          <tr>
+            <td align="center"><%= @identification.id %></td>
+            <td align="center"><%= @identification.set_number %> / $<%= @identification.wage %></td>
+            <td align="center"><%= @identification.worker.experimental_group %> / <%= @identification.worker.m_hit.experimental_country_to_text %></td>
+            <td align="center"><%= MHit.t_str(@identification.submitted_at, @identification.worker.m_hit) %></td>
+            <td align="center"><%= @identification.duration_to_s if @identification.done? %></td>
+            <td align="center"><%= link_to 'log', {:action => :hit_log, :id => @identification.id}, {:target => '_blank'} if @identification.log %></td>
+            <td align="center"><%= @identification.worker.color_blindness_test.male_female_string %></td>
+            <td align="center"><%= @identification.worker.color_blindness_test.age %></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+        <table>
+          <% tp, fp, fn = 0, 0, 0 %>
+          <tr>
+            <th>R</th>
+            <th>Pre</th>
+            <th>Rec</th>
+            <th>F</th>
+            <th>TP/FP/FN</th>
+          </tr>
+          <% (1..12).to_a.each do |r| %>
+            <% pre, rec, tp, fp, fn = @identification.calculate_accuracy(r) %>
+            <tr>
+              <td><%= r %></td>
+              <td><%= '%.1f' % (@identification.precision * 100) %>%</td>
+              <td><%= '%.1f' % (@identification.recall * 100) %>%</td>
+              <td><%= '%.1f' % (@identification.f_measure * 100) %>%</td>
+              <td><%= tp %>/<%= fp %>/<%= fn %></td>
+            </tr>
+          <% end %>
+          <tr>
+            <td colspan="4">
+              User points: <%= @identification.num_points %><br />
+              Truth points: <%= @identification.image.truth_points.length %><br />
+              <br />
+              Sum sqd distances: <%= '%.0f' % @identification.sum_of_sqd_distances %><br />
+              <% sds, points_to_distances = @identification.sum_of_distances %>
+              Sum distances: <%= '%.0f' % sds %><br />
+              Avg distance: <%= '%.2f' % @identification.avg_distance %><br /><br />
+              <br />
+              <%= @identification.image.filename %>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>
+        Points to distances: (<%= points_to_distances.length %>)
+        <div style="height:<%= @identification.image.height %>px; overflow:scroll;">
+          <table BORDER=1 RULES=ALL FRAME=VOID>
+            <tr>
+              <th>x,y</th>
+              <th>d</th>
+              <th>cumulative</th>
+            </tr>
+            <% cum_distance = 0 %>
+            <% points_to_distances.sort.each do |pt, d| %>
+              <% cum_distance += d %>
+              <tr>
+                <td><%= link_to pt.to_s, 'javascript:void(0);', :onclick => "redraw_image(); draw_cross(#{pt.x}, #{pt.y}, 10, red);" %></td>
+                <td><%= '%.1f' % d %></td>
+                <td><%= '%.1f' % cum_distance %></td>
+              </tr>
+            <% end %>
+          </table>
+        </div>
+      </td>
+      <td valign="top">
+        Observe rings around truth:
+        <%= link_to "r=#{1}", :r => nil %>
+        <% (2..12).to_a.each do |r| %>
+          <%= link_to "r=#{r}", :r => r %>
+        <% end %><br />
+        <%= render :partial => 'spy_on_user_points', :locals => {:points => @identification.points_as_strings} %>
+      </td>
+    </tr>
+  </table>
+</div>

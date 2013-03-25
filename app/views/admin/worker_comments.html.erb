@@ -1,0 +1,34 @@
+<h2>Worker Surveys</h2>
+
+<%
+  surveys_by_treatment = {
+    :meaningful => @surveys.select{|s| s.worker.meaningful?},
+    :zero_context => @surveys.select{|s| s.worker.zero_context?},
+    :shredded => @surveys.select{|s| s.worker.shredded?}
+  }
+%>
+
+<% surveys_by_treatment.each do |trt, surveys| %>
+  <% surveys_with_comments = surveys.select{|s| s.num_words_in_comments > 0} %>
+  <h3><%= trt.to_s.gsub('_', ' ') %> treatment</h3>
+  <%= "#{surveys_with_comments.length} of #{surveys.length}" %> left comments
+  <%= "(#{'%.2f' % (surveys_with_comments.length / surveys.length.to_f * 100)}%)" %> )<br /><br />
+  <table width="100%">
+    <tr>
+      <th align="center">Time spent (s)</th>
+      <th>Country</th>
+      <th>Num Images</th>
+      <th>Worker ID</th>      
+      <th>Comments</th>
+    </tr>
+    <% surveys_with_comments.each do |s| %>
+      <tr>
+        <td valign="top" align="center"><%= '%.0f' % s.time_taken %></td>
+        <td valign="top" align="center"><%= s.worker.m_hit.experimental_country_to_text %></td>
+        <td valign="top" align="center"><%= s.worker.all_done_identifications.length %></td>
+        <td valign="top" align="center"><%= link_to s.worker_id, :action => :investigate_worker, :id => s.worker_id %></td>
+        <td><%= s.comments %></td>
+      </tr>
+    <% end %>
+  </table>
+<% end %>

@@ -1,0 +1,12 @@
+<div>
+  <h3>Upload a Phenotype Image</h3>
+  <form method="post"
+        enctype="multipart/form-data"
+        action="/admin/add_phenotype">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>" />
+    <input type="file" name="file" style="width:100px;" /><br />
+    Phenotype name: <input type="text" name="name" style="width:200px;" /><br />
+    W x H: <input type="text" name="width" style="width:30px;" /> x <input type="text" name="height" style="width:30px;" />
+    <input type="submit" value=" Add Phenotype " />
+  </form>
+</div>

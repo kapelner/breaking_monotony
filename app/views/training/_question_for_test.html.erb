@@ -1,0 +1,12 @@
+<tr>
+  <td colspan="2"><%= n + 1 %> - <%= question %> </td>
+</tr>
+<% answers.each_with_index do |obj, i| %>
+  <tr id="q_<%= n %>_<%= i %>">
+    <td><input type="radio" name="q_<%= n %>" id="button_q_<%= n %>_<%= i %>" onclick="qualification_test.QuestionAnswered(<%= n %>, <%= i %>, <%= obj.last %>);" /></td>
+    <td><label for="button_q_<%= n %>_<%= i %>"><%= obj.first %></label></td>
+  </tr>
+<% end %>
+<tr>
+  <td colspan="2"><br /></td>
+</tr>

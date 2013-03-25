@@ -1,0 +1,118 @@
+<% unless @images.empty? %>
+<table width="100%">
+  <tr>
+    <td width="50%">
+      <div><%= link_to 'worker comments', {:action => :worker_comments}, {:target => '_blank'} %></div>
+      <div><%= link_to 'raw data dump', {:action => :raw_data_dump} %></div>
+      <div><%= link_to 'investigate all workers', {:action => :investigate_all_workers}, {:target => '_blank'} %> <%= link_to '(blind)', {:action => :investigate_all_workers, :blind => true}, {:target => '_blank'} %></div>
+      <div><%= link_to 'investigate all inaccurate HITs', {:action => :investigate_all_inaccurate_hits}, {:target => '_blank'} %></div>
+      <div><%= link_to 'cron jobs', {:action => :cron_jobs}, {:target => '_blank'} %></div>
+      <div><%= link_to 'run accept / reject HIT cron job', {:action => :approve_or_reject_hits}, {:target => '_blank'} %></div>
+      <% if Rails.env.development? %><div><%= link_to 'NUKE DB', {:action => :nuke} %></div><% end %>
+      <div><%= link_to 'nuke Adam and Dana', :action => :nuke_adam_and_dana %></div>
+      <div><%= link_to 'disqualified data from workers', {:action => :disqualified_data_from_workers}, {:target => '_blank'} %></div>
+    </td>
+    <td width="50%" align="center">
+      Current Set Version Number:<br />
+      <form method="post" action="/admin/update_version_number">
+        <input type="text" name="n" maxlength="2" value="<%= ProjectParam.getvals.current_version_number %>" style="width:25px;" />
+        <input type="submit" value=" Change Set Number" />
+      </form>
+    </td>
+  </tr>
+</table>
+<% end %>
+<div style="border: 1px solid black; padding:5px; margin: 5px;">
+  <%= render :partial => 'create_hits' %>
+  <%= render :partial => 'display_first_hits' %>
+</div>
+<% unless @phenotypes.empty? %>
+  <div style="border:1px solid black; padding:5px; margin:5px;">
+    <%= render :partial => 'upload_training_image' %>
+    <% unless @images.empty? %>
+      <br />
+      <%= link_to "display training images (#{@images.length})", 'javascript: void(0);', :id => 'display_images_link', :onclick => 'RevealTrainingImages();' %>
+      <div id="training_images_box"></div>
+      <script type="text/javascript">
+        function RevealTrainingImages(){
+          $('display_images_link').hide();
+          var r = new Ajax.Request(
+            '/admin/display_training_images',
+            {
+              method: 'post',
+              onComplete: function(response){
+                $('training_images_box').update(response.responseText);
+              }
+            }
+          );
+        }
+
+        function ChangeImageOrder(image_id){
+          var order_field = $("image_order_" + image_id);
+          var r1 = new Ajax.Request(
+            '/admin/change_image_order',
+            {
+              method: 'post',
+              //make sure to add all the data:
+              parameters: 'id=' + image_id + '&order=' + order_field.value,
+              onComplete: function(response){
+                alert(response.responseText);
+                var r2 = new Ajax.Request(
+                  '/admin/update_consistency_message',
+                  {
+                    method: 'post',
+                    onComplete: function(response){
+                      $('consistency_message').update(response.responseText);
+                      if (response.responseText.trim() == "<%= Image::CONSISTENT_MESSAGE %>"){
+                        $('consistency_message').style.color = 'green';
+                      }
+                      else {
+                        $('consistency_message').style.color = 'red';
+                      }
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        function ChangeNumImagesInExperiment(){
+          var r1 = new Ajax.Request(
+            '/admin/change_num_images_in_experiment',
+            {
+              method: 'post',
+              //make sure to add all the data:
+              parameters: 'n=' + $('num_images_in_experiment').value,
+              onComplete: function(response){
+                alert(response.responseText);
+                var r2 = new Ajax.Request(
+                  '/admin/update_consistency_message',
+                  {
+                    method: 'post',
+                    onComplete: function(response){
+                      $('consistency_message').update(response.responseText);
+                      if (response.responseText.trim() == "<%= Image::CONSISTENT_MESSAGE %>"){
+                        $('consistency_message').style.color = 'green';
+                      }
+                      else {
+                        $('consistency_message').style.color = 'red';
+                      }
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      </script>
+    <% end %>
+  </div>
+<% end %>
+
+<div style="border: 1px solid black; padding:5px; margin: 5px;">
+  <%= render :partial => 'upload_phenotype_image' %>
+  <% unless @phenotypes.empty? %>
+    <%= render :partial => 'display_phenotypes' %>
+  <% end %>
+</div>

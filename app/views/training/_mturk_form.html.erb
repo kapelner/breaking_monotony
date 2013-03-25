@@ -1,0 +1,26 @@
+<form method="post" action="https://<%= Rails.env.development? ? 'workersandbox' : 'www' %>.mturk.com/mturk/externalSubmit" id="mturk_form">
+  <input type="hidden" name="assignmentId" value="<%= @worker_for_this_hit.mturk_assignment_id %>" />
+  <input type="hidden" name="data" value="data" />
+</form>
+<span id="submit_mturk_button_wrapper">
+  <input type="button"
+    id="done_and_submit_to_mturk_button"
+    value=" Submit to MTurk. "
+    onclick="javascript: tell_server_then_submit_to_mturk();" />
+</span>
+<script type="text/javascript">
+  function tell_server_then_submit_to_mturk(){
+    $('submit_mturk_button_wrapper').update();
+    var r = new Ajax.Request(
+      '/training/submit_to_mturk_and_close_session',
+      {
+        method: 'post',
+        //make sure to add all the data:
+        parameters: 'enc_worker_id=<%= @worker_for_this_hit.encrypted_id %>&browser=' + encodeURIComponent(window.navigator.userAgent),
+        onComplete: function(response){
+          $('mturk_form').submit();
+        }
+      }
+    );
+  }
+</script>

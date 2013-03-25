@@ -1,0 +1,10 @@
+<div id="not_firefox_warning" style="display:none;">
+  WARNING: Many Turkers have experienced problems using browsers that are not firefox. We strongly
+  recommend you use <%= link_to 'firefox', 'http://www.firefox.com', {:target => '_blank'} %> to do <anonymized> HITs.
+</div>
+<script type="text/javascript">
+  //display WARNING if not firefox
+  if (window.navigator.userAgent.match("Firefox") == null){
+    $('not_firefox_warning').show();
+  }
+</script>

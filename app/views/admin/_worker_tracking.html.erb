@@ -1,0 +1,32 @@
+<table BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th>ID</th>
+    <th align="center">Controller</th>
+    <th align="center">Action</th>
+    <th align="center">t</th>
+    <th align="center">delta_t (s)</th>
+    <th align="center">HTML Method</th>
+    <th align="center">AJAX?</th>
+    <th align="center">Params</th>
+  </tr>
+  <% ts = @worker.trackings.reverse %>
+  <% unless @worker.pushed_submit_to_mturk? %>
+    <tr>
+      <td colspan="3" align="right">Time Since last:</td>
+      <td align="center"><%= (Time.now - ts.first.created_at).round %></td>
+      <td colspan="3"></td>
+    </tr>
+  <% end %>
+  <% ts.each_with_index do |t, i| %>
+    <tr>
+      <td><%= ts.length - i %>&nbsp;&nbsp;<span style="font-size:8px;"><%= t.id %></span></td>
+      <td align="center"><%= t.controller %></td>
+      <td align="center"><%= t.action %></td>
+      <td align="center"><%= t.created_at.strftime('%m/%d %H:%M:%S') %></td>
+      <td align="center"><%= (t.created_at - ts[i + 1].created_at).round if i < ts.length - 1 %></td>
+      <td align="center"><%= t.method %></td>
+      <td align="center"><%= t.ajax? ? 'Y' : 'N' %></td>
+      <td align="center"><%= t.big_brother_params.reject{|bbp| bbp.param == 'log' or bbp.param == 'points' or bbp.value.match('adkdacsl_instructional')}.map{|bbp| "#{bbp.param}: #{bbp.value}"}.join('<br />') %></td>
+    </tr>
+  <% end %>
+</table>

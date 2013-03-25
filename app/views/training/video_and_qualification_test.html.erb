@@ -1,0 +1,8 @@
+<div id="qualification_test">
+  <center>
+    <% if Rails.env.development? %>Treatment: <%= @worker_for_this_hit.experimental_group %><% end %>
+    <h2><% if @worker_for_this_hit.meaningful? %>How to Identify Tumor Cells<% else %>How to Identify Objects of Interests<% end %></h2>
+    <%= render :partial => 'video_for_qualification_test' %>
+    <%= render :partial => 'questions_for_qualification_test' %>
+  </center>
+</div>

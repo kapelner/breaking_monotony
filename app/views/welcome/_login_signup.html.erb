@@ -1,0 +1,53 @@
+<% input_width = 190 %>
+<div style="padding:5px; margin:5px; background-color:rgb(240,255,240);">
+  <form action="/welcome/login" method="post" onsubmit="return SimmonsGeneral.login();">
+    <table>
+      <tr>
+        <td>Email: </td>
+        <td><input name="login" id="user_login_login" type="text" style="width:<%= input_width %>px;" /></td>
+      </tr>
+      <tr>
+        <td>Password: </td>
+        <td><input name="password" id="user_password_login" type="password" style="width:<%= input_width %>px;" /></td>     
+      </tr>
+      <tr>
+        <td><input type="submit" value=" Log In " /></td>
+        <td></td>
+      </tr>    
+    </table>
+  </form>
+</div>
+<div style="display:none; padding:5px; margin:5px; background-color:rgb(240,240,255);">
+  <form action="/welcome/signup" method="post" onsubmit="return SimmonsGeneral.signup();">
+    <table>
+      <tr>
+        <td>Email: </td>
+        <td><input name="login" id="user_login_signup" type="text" style="width:<%= input_width %>px;" /></td>
+      </tr>
+      <tr>
+        <td>First Name: </td>
+        <td><input name="first_name" type="text" id="user_first_name_signup" style="width:<%= input_width %>px;" /></td>
+      </tr>
+      <tr>
+        <td>Last Name: </td>
+        <td><input name="last_name" type="text" id="user_last_name_signup" style="width:<%= input_width %>px;" /></td>
+      </tr>
+      <tr>
+        <td>Institution: </td>
+        <td><input name="institution" id="user_institution_signup" type="text" style="width:<%= input_width %>px;" /></td>
+      </tr> 
+      <tr>
+        <td valign="top">Application: </td>
+        <td><textarea name="application" id="user_application_signup" style="width:<%= input_width %>px;"></textarea></td>
+      </tr>    
+      <tr>
+        <td>Password: </td>
+        <td><input name="password" id="user_password_signup" type="password" style="width:<%= input_width %>px;" /></td>     
+      </tr>
+      <tr>
+        <td><input type="submit" value=" Sign Up " /></td>
+        <td></td>
+      </tr>
+    </table>
+  </form>
+</div>

@@ -1,0 +1,20 @@
+<tr>
+  <td id="td_<%= p.name %>" class="phenotype unselected_phenotype" onclick="SelectPhenotype('<%= p.name %>');" >
+    <input type="radio" id="phenotype_<%= p.name %>" name="phenotype" style="display:none;" />
+    <label for="phenotype_<%= p.name %>"><%= @worker_for_this_hit.meaningful? ? p.name : 'Object' %> <span id="counter_<%= p.name %>" style="display:none;">0</span></label>
+    <div onclick="$('phenotype_<%= p.name %>').click();">
+      <img src="<%= url_for :controller => :files, :action => :get_phenotype_image, :id => p.encrypted_id %>" 
+        border="0" 
+        width="<%= p.display_width %>" 
+        height="<%= p.display_height %>" 
+        onmouseover="$('magnified_phenotype_<%= p.name %>').show();"
+        onmouseout="$('magnified_phenotype_<%= p.name %>').hide();" />
+    </div>
+    <div id="magnified_phenotype_<%= p.name %>" class="magnified_phenotype" style="display:none; margin-top:-300px;">
+      <img src="<%= url_for :controller => :files, :action => :get_phenotype_image, :id => p.encrypted_id %>" 
+        border="0" 
+        width="<%= p.magnified_width %>" 
+        height="<%= p.magnified_height %>" />
+     </div>
+  </td>
+</tr>

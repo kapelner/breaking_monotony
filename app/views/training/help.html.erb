@@ -1,0 +1,28 @@
+<h2>Help</h2>
+
+<h3>Video Tutorial</h3>
+
+<a href="<%= url_for :controller => :files, :action => :video, :name => 'adkdacsl_instructional_video.flv' %>"
+   style="display:block;width:400px;height:300px"
+   id="player">
+</a>
+<script type="text/javascript">
+  //initialize the player
+  flowplayer("player",
+    {src : "/flowplayer-<%= FilesController::FlowPlayerVer %>.swf"},
+    {clip :
+      {scaling : 'fit'}
+    });
+</script>
+
+<h3>FAQ</h3>
+
+<div>1 <strong>What browser do you recommend?</strong></div><br />
+Firefox only.
+<br /><br />
+<div>2 <strong>Why does the submit button not work?</strong></div><br />
+It does. Please be patient. We are experience high server volume. If you are sure it's not working,
+switch to firefox and try again. Make sure after you see our confirmation
+page, you wait a few seconds in order for the HIT to submit to MTurk. Don't leave until you see a confirmation
+from MTurk.
+<br /><br />

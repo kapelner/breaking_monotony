@@ -1,0 +1,12 @@
+<img src="<%= url_for :controller => :files, :action => :get_training_image, :id => @identification.image.encrypted_id %>"
+  id="original_training_image"
+  style="display:none;" />
+<div id="preview_image" style="height:<%= TrainingController::CanvasHeight %>px; display:none; position:absolute; text-align:center;">
+  <img src="<%= url_for :controller => :files, :action => :get_training_image, :id => @identification.image.encrypted_id %>"
+    width="<%= (TrainingController::CanvasHeight / @identification.image.height.to_f * @identification.image.width.to_f).to_i %>"
+    height="<%= TrainingController::CanvasHeight %>" 
+    border="2" />
+</div>
+<div style="width:600px; height:<%= TrainingController::CanvasHeight %>px; overflow:scroll;">
+  <canvas id="canvas" onmouseup="training.point(event);"></canvas>
+</div>

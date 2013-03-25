@@ -1,0 +1,19 @@
+<h2>Cron Jobs</h2>
+<div id="cron_jobs" style="padding:20px;">
+  <table width="100%" align="center">
+    <tr>
+      <th>#</th>
+      <th align="left">Name</th>
+      <th align="left">Data</th>
+      <th align="left" width="20%">Time</th>
+    </tr>
+    <% @cron_jobs.sort{|a, b| b.created_at <=> a.created_at}.each_with_index do |cj, i| %>
+      <tr>
+        <td><%= i + 1 %></td>
+        <td><%= link_to cj.name, :job => cj.name %></td>
+        <td><%= cj.data %></td>
+        <td><%= MHit.t_str(cj.created_at, MHit::USA) %></td>
+      </tr>
+    <% end %>
+  </table>
+</div>

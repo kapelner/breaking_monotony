@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "=//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title><% if Rails.env.development? %>DEVELOPMENT <% end %><%= @title ? @title : 'ADK-DAC' %></title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <%= include_stylesheets :common, :media => 'all' %>
+    <%= include_javascripts :common %>
+    <% if @google_visualization %>
+      <script type='text/javascript' src='http://www.google.com/jsapi'></script>
+      <script type='text/javascript'>
+        google.load('visualization', '1', {'packages':['annotatedtimeline']});
+      </script>
+    <% end %>
+    <%= csrf_meta_tags %> 
+  </head>
+  <body style="background-color:rgb(<% if Rails.env.development? %>230,230,100<% else %>120,100,100<% end %>);">
+    <center>
+      <div style="width:1000px; margin:10px;">
+        <%= rounded_div do %>
+          <div id="main">
+            <% if logged_in? %><div style="text-align:right;"><%= link_to 'logout', :controller => :welcome, :action => :signout %></div><% end %>
+            <h2>ADK-DAC Experimental Portal</h2>
+            <%= render :partial => 'mission' if controller.controller_name == 'welcome' %>
+            <%= yield :layout %>
+          </div>
+        <% end %>
+      </div>
+      <%= render :partial => 'shared/bottom_links' %>
+    </center>
+    <script type="text/javascript">
+      <% if flash[:error] or flash[:notice] %>
+        alert('<%= flash[:error] || flash[:notice] %>');
+      <% end %>
+    </script>
+    <% if Rails.env.production? %>
+      <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+      </script>
+      <script type="text/javascript">
+        try {
+   	  var pageTracker = _gat._getTracker("UA-<anonymized>");
+          pageTracker._trackPageview();
+        } catch(err) {}
+      </script>
+    <% end %>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+<div style="text-align:left;">
+  <table width="100%">
+    <tr>
+      <td rowspan="2" valign="top">
+        <table width="100%">
+          <tr>
+            <td>
+              <% @worker_for_this_hit.meaningful? ? "Identify these #{@identification.image.phenotype.name} cells!" : "Identify these objects of interest" %>
+              <div style="font-size:10px; width:600px;">
+                <table>
+                  <tr>
+                    <td>
+                      Left click to make a point, right click to delete a point
+                      <span style="color:white;">Image name: <%= @identification.image.filename %></span><br />
+                      If you do not see the image below, reduce the magnification, or restart your browser.
+                    </td>
+                    <td style="font-size:20px;" align="center">
+                      Total earnings: 
+                      <span style="color:rgb(0,255,0); background-color:black;">
+                        &nbsp;<%= number_to_currency(@worker_for_this_hit.total_earnings) %>&nbsp;
+                      </span>
+                    </td>
+                    <td style="font-size:20px;" align="center">
+                      Time left: <span style="border: 1px solid black; background-color:black; color:white;">&nbsp;<span id="time_left"></span>&nbsp;</span>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+            <td valign="top"></td>
+          </tr>
+        </table>
+        <%= render :partial => 'scoreboard' %>
+        <%= render :partial => 'magnifier' %>
+        DO NOT RELOAD THE PAGE - YOU WILL LOSE YOUR POINTS
+      </td>
+      <td valign="top" align="right"></td>
+    </tr>
+    <tr>
+      <td valign="top" align="right"></td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <strong style="font-size:20px;">Find all <%= @worker_for_this_hit.meaningful? ? "cancerous tumor cells" : "objects of interest" %> in the image below:</strong>
+          <input type="button" value=" Click here if you do not see an image below "
+            id="click_button_for_not_seeing_image"
+            onclick="document.location = '/training/trouble_viewing_image_button?hit_id=<%= @worker_for_this_hit.m_hit.encrypted_id %>&workerId=<%= @worker_for_this_hit.mturk_worker_id %>&assignmentId=<%= @worker_for_this_hit.mturk_assignment_id %>';" />
+      </td>
+    </tr>
+    <% if @worker_for_this_hit.shredded? %>
+      <tr>
+        <td colspan="3">
+          <div id="shredded_message_during_training">
+            NONE of your points will be saved
+            because we are testing our system,
+            but you will still be paid.
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+</div>

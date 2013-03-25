@@ -1,0 +1,78 @@
+<style type="text/css">
+  div#information_page {
+      width:500px;
+      text-align:left;
+      padding: 5px;
+      border: 1px solid gray;
+  }
+
+  div#information_page li {
+      margin-bottom:10px;
+  }
+</style>
+<div id="information_page">
+  <h3>Since the tasks you will perform require you to be able to differentiate color, we have
+  to ask you a few questions that will determine if you may be colorblind.</h3>
+
+  <%= form_for :color_blindness_test, :html => {:onsubmit => "return hide_submit_button();"} do |f| %>
+    <input type="hidden" name="assignmentId" value="<%= params[:assignmentId] %>" />
+    <input type="hidden" name="workerId" value="<%= params[:workerId] %>" />
+    <input type="hidden" name="hit_id" value="<%= params[:hit_id] %>" />
+    <input type="hidden" name="worker_id" value="<%= params[:worker_id] %>" />
+
+    <%= f.hidden_field :worker_id, :value => @worker.id %>
+    <ol>
+      <li>
+        Look at the below image.<br />
+        <div style="margin:15px;">
+          <img src="/images/number_test.jpg" border="0" width="281" height="271" alt="number_test" />
+        </div>
+        Do you see a number? If so, enter it into this box:<br />
+        <%= f.text_field :number_in_box, :style => 'width:25px;', :maxlength => 2 %>
+      </li>
+      <li>
+        Are you male or female?<br />
+        <%= f.radio_button :male_female, 1 %><label for="color_blindness_test_male_female_1">Male</label>
+        <%= f.radio_button :male_female, 0 %><label for="color_blindness_test_male_female_0">Female</label>
+      </li>
+      <li>
+        Have you ever had trouble differentiating between reds and greens?<br />
+        <%= f.radio_button :trouble_red_green, 1 %><label for="color_blindness_test_trouble_red_green_1">Yes</label>
+        <%= f.radio_button :trouble_red_green, 0 %><label for="color_blindness_test_trouble_red_green_0">No</label>
+      </li>
+      <li>
+        Have you ever had trouble differentiating between blues and yellows?<br />
+        <%= f.radio_button :trouble_blue_yellow, 1 %><label for="color_blindness_test_trouble_blue_yellow_1">Yes</label>
+        <%= f.radio_button :trouble_blue_yellow, 0 %><label for="color_blindness_test_trouble_blue_yellow_0">No</label>
+      </li>
+      <li>
+        How old are you?<br />
+        <%= f.text_field :age, :style => 'width:25px;', :maxlength => 2 %>
+      </li>
+      <li>
+        Listen to the following sound clip:<br /> <%= mp3_pronunciation_player("sound.mp3") %>
+        <span style="font-size:10px;">(requires <%= link_to "Adobe Flash", "http://get.adobe.com/flashplayer/", :target => '_blank' %>)</span>
+        <br />
+        and enter the word below:<br />
+        <%= f.text_field :word, :style => 'width:50px;', :maxlength => 10 %>
+      </li>
+    </ol>
+    <div id="color_blindness_test_submit_button" style="text-align:center;">
+      <%= f.submit 'Submit' %>
+    </div>
+  <% end %>
+</div>
+<script type="text/javascript">
+  Event.observe(window, 'load', function(){
+    $('color_blindness_test_number_in_box').focus();
+    <% if @wi and !@wi.valid? %>
+      $('color_blindness_test_word').focus();
+      alert("You must fill out all the information. You must enter the correct sound word.");
+    <% end %>
+  });
+
+  function hide_submit_button(){
+    $('color_blindness_test_submit_button').hide();
+    return true;
+  }
+</script>

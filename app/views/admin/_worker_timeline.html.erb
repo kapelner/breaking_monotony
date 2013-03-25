@@ -1,0 +1,62 @@
+<script type='text/javascript'>
+  google.load('visualization', '1', {'packages':['annotatedtimeline']});
+  google.setOnLoadCallback(drawChart);
+  function drawChart() {
+    var data = new google.visualization.DataTable();
+    data.addColumn('date', 't');
+    data.addColumn('number', '');
+    data.addColumn('string', 'title1');
+    data.addColumn('string', 'text1');
+    data.addRows([
+      <% h = @worker.m_hit %>
+      <% all_actions = [all_viewings, @worker, @worker.color_blindness_test, @worker.video_watchings, @worker.qualification, @worker.identifications].flatten.reject{|a| a.nil?}.sort{|a, b| a.created_at <=> b.created_at} %>
+      <% t_o = all_actions.first.created_at.to_i %>
+      <% all_actions.each do |a| %>
+        <% if a.class == MHitView %>
+          [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "Viewed HIT", "<%= MHit.t_str(a.created_at, h) %>"],
+        <% elsif a.class == Worker %>
+          [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "Accepted HIT", "<%= MHit.t_str(a.created_at, h) %>  ID: <%= a.m_hit_id %>"],
+        <% elsif a.class == ColorBlindnessTest %>
+          [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "Color Blindness Test Done", "<%= MHit.t_str(a.created_at, h) %>  "],
+        <% elsif a.class == VideoWatching %>
+          [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "Viewed training video", "<%= MHit.t_str(a.created_at, h) %>  "],
+        <% elsif a.class == Qualification %>
+          [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "Passed training quiz", "<%= MHit.t_str(a.created_at, h) %>  "],
+        <% elsif a.class == Identification %>
+          <% if a.log %>
+            [new Date(<%= a.log.first.last.to_i %>), <%= (a.log.first.last.to_i / 1000 - t_o) / 60.to_f %>, "Started a training", "<%= MHit.t_str(Time.at(a.log.first.last.slice(0...-3).to_i), h) %>  ID: <%= a.id %>, set #<%= a.set_number %>, wage $<%= a.wage %>,"],
+          <% end %>
+          <% if a.submitted_at %>
+            [new Date(<%= a.submitted_at.to_i * 1000 %>), <%= (a.submitted_at.to_i - t_o) / 60.to_f %>, "Submitted a training", "<%= MHit.t_str(a.submitted_at, h) %>  ID: <%= a.id %>, # points: <%= a.num_points %>, Duration: <%= a.duration_to_s %>min, F: <%= '%.1f' % (a.f_measure * 100) %>%"],
+          <% end %>
+        <% elsif a.class == PaymentOutcome %>
+          <% if a.rejected? %>
+            [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "HIT rejected", "<%= MHit.t_str(a.created_at, h) %>"],
+          <% elsif a.accepted? %>
+            [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "HIT accepted", "<%= MHit.t_str(a.created_at, h) %>"],
+          <% elsif a.never_submitted_therefore_never_paid? %>
+            [new Date(<%= a.created_at.to_i * 1000 %>), <%= (a.created_at.to_i - t_o) / 60.to_f %>, "HIT NEVER SUBMITTED!!!", "<%= MHit.t_str(a.created_at, h) %>"],
+          <% end %>
+        <% end %>
+      <% end %>
+    ]);
+    var chart = new google.visualization.AnnotatedTimeLine(document.getElementById('chart_div'));
+    chart.draw(data, {displayAnnotations: true});
+  }
+</script>
+<div id="chart_div" style="width: 900px; height: 400px;"></div>
+<% if false %>
+<div style="">
+  t_o: <%= t_o %>
+  <table>
+  <% all_actions.sort{|a,b| a.created_at <=> b.created_at}.each do |a| %>
+    <tr>
+      <td><%= a.class %></td>
+      <td><%= a.id %></td>
+      <td><%= a.created_at.to_i %></td>
+      <td><%= a.created_at.to_i - t_o %></td>
+    </tr>
+  <% end %>
+  </table>
+</div>
+<% end %>

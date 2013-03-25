@@ -1,0 +1,18 @@
+<% 
+  us_m_workers = all_workers.select{|w| w.m_hit.experimental_country == MHit::USA and w.meaningful?}
+  us_l_workers = all_workers.select{|w| w.m_hit.experimental_country == MHit::USA and !w.meaningful?}
+  in_m_workers = all_workers.select{|w| w.m_hit.experimental_country == MHit::INDIA and w.meaningful?}
+  in_l_workers = all_workers.select{|w| w.m_hit.experimental_country == MHit::INDIA and !w.meaningful?}
+%>
+<% [["US-M Totals", us_m_workers], ["US-L Totals", us_l_workers], ["IN-M Totals", in_m_workers], ["IN-L Totals", in_l_workers], ["Grand Total", all_workers]].each do |name, a| %>
+  <tr style="font-weight:bold;">
+    <td colspan="5" align="right"><%= name %>:</td>
+    <td><%= a.inject(0){|sum, w| sum + w.all_done_identifications.length} %>/<%= number_to_currency(a.inject(0){|sum, w| sum + w.total_earnings}) %></td>
+    <td></td>
+    <td><%= a.length %></td>
+    <td><%= a.select{|w| w.color_blindness_test}.length %></td>
+    <td><%= a.inject(0){|sum, w| sum + w.video_watchings.length} %></td>
+    <td><%= a.select{|w| w.qualification}.length %></td>
+    <td colspan="1"></td>
+  </tr>
+<% end %>

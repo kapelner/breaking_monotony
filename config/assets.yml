@@ -1,0 +1,21 @@
+embed_assets: off
+compress_assets: off
+package_assets: off
+
+javascripts:
+  common:
+    - public/javascripts/prototype.js
+    - public/javascripts/effects.js
+    - public/javascripts/dragdrop.js
+    - public/javascripts/controls.js
+    - public/javascripts/excanvas.js
+    - public/javascripts/flowplayer.js
+    - public/javascripts/json.js
+    - public/javascripts/application.js
+    - public/javascripts/qualification_test.js
+    - public/javascripts/rails.js
+    - public/javascripts/training.js
+
+stylesheets:
+  common:
+    - public/stylesheets/*.css

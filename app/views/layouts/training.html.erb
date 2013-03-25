@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "=//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title>Object Identification HIT</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <%= include_stylesheets :common, :media => 'all' %>
+    <%= include_javascripts :common %>
+  </head>
+  <body>
+    <center>
+      <div id="app" style="display:none;">
+        <%= yield :layout %>
+      </div>
+      <div id="no_app" style="display:none;">
+        Sorry. This HIT only works with
+        <%= link_to 'Firefox', 'http://www.firefox.com', {:target => '_blank'} %>
+        and MS Windows.
+      </div>
+      <div id="no_app_upgrade" style="display:none;">
+        Sorry. This HIT only works with
+        <%= link_to 'Firefox', 'http://www.firefox.com', {:target => '_blank'} %>
+        version 6 or more recent. Please upgrade your browser to continue. We apologize for
+        the inconvenience.
+      </div>
+      <script type="text/javascript">
+        //alert(window.navigator.userAgent);
+        //ensure browser and OS is compatible
+        if ((window.navigator.userAgent.match("Firefox") != null) && window.navigator.userAgent.match("Windows") != null){
+          if (parseFloat(window.navigator.userAgent.split("Firefox/")[1]) < 6){
+            $('no_app_upgrade').show();
+          }
+          else {
+            $('app').show();//we're cruising with Firefox v6 or > on Windows
+          }
+        }
+        else {
+          $('no_app').show();
+        }
+      </script>  
+    </center>
+    <% if Rails.env.development? %>
+      <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+      </script>
+      <script type="text/javascript">
+        try {
+	  var pageTracker = _gat._getTracker("UA-<anonymized>");
+          pageTracker._trackPageview();
+        } catch(err) {}
+      </script>
+    <% end %>
+  </body>
+</html>

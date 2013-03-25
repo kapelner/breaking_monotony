@@ -1,0 +1,19 @@
+<div style="border:1px solid black; padding:5px; margin:5px;">
+  <% unless @comments.empty? %>
+    <h4>Administrator Comments</h4>
+    <% @comments.each do |c| %>
+      <div style="margin-bottom:10px;">
+        <div><%= c.body %></div>
+        <div style="padding-left:20px; padding-top:5px;">-<%= c.user.fullname %>, <%= MHit.t_str(c.created_at, MHit::USA) %></div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <h4>Create new Comment</h4>
+
+  <form method="post" action="/admin/create_worker_comment">
+    <input type="hidden" name="worker_id" value="<%= @worker.id %>" />
+    <textarea name="body" style="width:600px; height:100px;"></textarea><br />
+    <input type="submit" value=" Create Comment " />
+  </form>
+</div>

@@ -1,0 +1,34 @@
+<h3>N's in the experiment</h3>
+
+<table width="100%" BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th></th>
+    <th>Meaningful</th>
+    <th>Zero-Context</th>
+    <th>Shredded</th>
+    <th>Total</th>
+  </tr>
+  <tr>
+    <% americans = @workers.select{|w| w.m_hit.experimental_country == MHit::USA} %>
+    <td>US</td>
+    <td><%= americans.count{|w| w.meaningful?} %></td>
+    <td><%= americans.count{|w| w.zero_context?} %></td>
+    <td><%= americans.count{|w| w.shredded?} %></td>
+    <td><%= americans.length %></td>
+  </tr>
+  <tr>
+    <% indians = @workers.select{|w| w.m_hit.experimental_country == MHit::INDIA} %>
+    <td>India</td>
+    <td><%= indians.count{|w| w.meaningful?} %></td>
+    <td><%= indians.count{|w| w.zero_context?} %></td>
+    <td><%= indians.count{|w| w.shredded?} %></td>
+    <td><%= indians.length %></td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td><%= (americans + indians).count{|w| w.meaningful?} %></td>
+    <td><%= (americans + indians).count{|w| w.zero_context?} %></td>
+    <td><%= (americans + indians).count{|w| w.shredded?} %></td>
+    <td><span style="font-size: 24px; font-weight: bold;"><%= @workers.length %></span></td>
+  </tr>
+</table>

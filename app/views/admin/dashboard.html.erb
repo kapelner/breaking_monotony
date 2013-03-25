@@ -1,0 +1,295 @@
+<h2>Dashboard</h2>
+<h4>All images with version >= <%= ProjectParam.getvals.current_version_number %> are displayed</h4>
+<% #country is part of the HIT, but condition is on the WORKER!!!
+  us_m_workers = []
+  us_z_workers = []
+  us_s_workers = []
+  in_m_workers = []
+  in_z_workers = []
+  in_s_workers = []
+  us_workers = []
+  in_workers = []
+  m_workers = []
+  z_workers = []
+  s_workers = []
+  workers = []
+  Worker.find_each do |w|
+    next if w.m_hit.nil?
+    next if w.failed_cb_test?
+    us_m_workers << w if w.m_hit.experimental_country == MHit::USA and w.meaningful?
+    us_z_workers << w if w.m_hit.experimental_country == MHit::USA and w.zero_context?
+    us_s_workers << w if w.m_hit.experimental_country == MHit::USA and w.shredded?
+    in_m_workers << w if w.m_hit.experimental_country == MHit::INDIA and w.meaningful?
+    in_z_workers << w if w.m_hit.experimental_country == MHit::INDIA and w.zero_context?
+    in_s_workers << w if w.m_hit.experimental_country == MHit::INDIA and w.shredded?
+    us_workers << w if w.m_hit.experimental_country == MHit::USA
+    in_workers << w if w.m_hit.experimental_country == MHit::INDIA
+    m_workers << w if w.meaningful?
+    z_workers << w if w.zero_context?
+    s_workers << w if w.shredded?
+    workers << w
+  end
+  arrays = [us_m_workers,
+              us_z_workers,
+              us_s_workers,
+              in_m_workers,
+              in_z_workers,
+              in_s_workers,
+              us_workers,
+              in_workers,
+              m_workers,
+              z_workers,
+              s_workers,
+              workers]
+%>
+<h3>Overall for Qualified</h3>
+<table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th width="25%"></th>
+    <th colspan="3" align="center">US</th>
+    <th colspan="3" align="center">IN</th>
+    <th colspan="2" align="center">By Country</th>
+    <th colspan="3" align="center">By Treatment</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">US</th>
+    <th align="center">IN</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center" width="10%">Total</th>
+  </tr>
+  <tr>
+    <td>N (Num Workers Passed CB)</td>
+    <% arrays.each do |a| %>
+      <td align="center"><%= a.select{|w| w.color_blindness_test}.length %></td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Induced to do work</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% num_who_did_work = a.select{|w| w.all_done_identifications.length > 0}.length %>
+        <% num_colorblindness_tests = a.select{|w| w.color_blindness_test}.length %>
+        <%= '%.0f' % (num_who_did_work / num_colorblindness_tests.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Avg images done</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% all_idents = a.select{|w| w.qualification}.map{|w| w.all_done_identifications} %>
+        <%= '%.1f' % ((all_idents.inject(0){|sum, idents| sum + idents.length}) / all_idents.length.to_f) %></td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Avg Time Ident. Pts (min)</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% idents = a.map{|w| w.all_done_identifications}.flatten %>
+        <%= '%.1f' % ((idents.inject(0){|sum, i| sum + (i.duration / 60.to_f)}) / idents.length.to_f) %>
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Avg Total Time (min)</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% total_times = a.reject{|w| w.all_done_identifications.empty?}.map{|w| w.total_time_min} %>
+        <%= '%.1f' % ((total_times.inject(0){|sum, t| sum + t}) / total_times.length.to_f) %>
+      </td>
+    <% end %>
+  </tr>
+   <tr>
+    <td>Avg Recall @ r = 2px</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% all_done_identifications = a.map{|w| w.all_done_identifications}.flatten %>
+        <% recalls = all_done_identifications.map{|i| i.calculate_accuracy(2 ** 2); i.recall} %>
+        <%= '%.3f' % ((recalls.inject(0){|sum, r| sum + r}) / recalls.length.to_f) %>
+      </td>
+    <% end %>
+  </tr>
+</table>
+
+<h3>Survey Information</h3>
+<table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th width="25%"></th>
+    <th colspan="3" align="center">US</th>
+    <th colspan="3" align="center">IN</th>
+    <th colspan="2" align="center">By Country</th>
+    <th colspan="3" align="center">By Treatment</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">US</th>
+    <th align="center">IN</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center" width="10%">Total</th>
+  </tr>
+  <tr>
+    <td>% Who took Survey</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% num_people_who_finished = a.select{|w| w.pushed_submit_to_mturk?}.length %>
+        <% num_people_who_filled_in_survey = a.select{|w| w.pushed_submit_to_mturk?}.select{|w| w.worker_survey and w.worker_survey.filled_in?}.length %>
+        <%= '%.0f' % (num_people_who_filled_in_survey / num_people_who_finished.to_f * 100) %>%
+      </td>
+    <% end %>    
+  </tr>
+  <% [:enjoyment, :purpose, :accomplishment, :meaningful, :recognition].each do |question| %>
+    <tr>
+      <td><%= question %></td>
+      <% arrays.each do |a| %>
+        <td align="center">
+          <% surveys = a.map{|w| w.worker_survey}.reject{|ws| ws.nil?} %>
+          <% question_responses = surveys.map{|ws| ws[question]}.reject{|ws| ws.nil?} %>
+          <%= '%.1f' % ((question_responses.inject(0){|sum, t| sum + t}) / question_responses.length.to_f) %>
+          <% if a == @workers %>
+            (<%= question_responses.length %>)
+          <% end %>
+        </td>
+      <% end %>
+    </tr>
+  <% end %>
+  <tr>
+    <td>Survey avg comment words excl 0's</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% surveys = a.map{|w| w.worker_survey}.reject{|ws| ws.nil?} %>
+        <% num_words_in_comments = surveys.map{|ws| ws.num_words_in_comments}.reject{|num| num.zero?} %>
+        <%= '%.1f' % ((num_words_in_comments.inject(0){|sum, t| sum + t}) / num_words_in_comments.length.to_f) %>
+      </td>
+    <% end %>
+  </tr>
+</table>
+
+<h3>Worker who did...</h3>
+<table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th width="25%"></th>
+    <th colspan="3" align="center">US</th>
+    <th colspan="3" align="center">IN</th>
+    <th colspan="2" align="center">By Country</th>
+    <th colspan="3" align="center">By Treatment</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">US</th>
+    <th align="center">IN</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center" width="10%">Total</th>
+  </tr>
+  <tr>
+    <td>Not Get Past the CB Test</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <%= '%.0f' % (a.select{|w| w.color_blindness_test.nil?}.length / a.length.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Not Finish the Video & Quiz</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <%= '%.0f' % (a.select{|w| w.color_blindness_test and !w.watched_video?}.length / a.length.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Did at least one good image</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <%= '%.0f' % (a.select{|w| w.all_done_identifications.length > 0}.length / a.length.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+</table>
+
+<h3>Marginals</h3>
+
+<table width="100%" align="center" BORDER=1 RULES=ALL FRAME=VOID>
+  <tr>
+    <th width="25%"></th>
+    <th colspan="3" align="center">US</th>
+    <th colspan="3" align="center">IN</th>
+    <th colspan="2" align="center">By Country</th>
+    <th colspan="3" align="center">By Treatment</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center">US</th>
+    <th align="center">IN</th>
+    <th align="center">M</th>
+    <th align="center">Z</th>
+    <th align="center">S</th>
+    <th align="center" width="10%">Total</th>
+  </tr>
+  <tr>
+    <td>Colorblindness Test</td>
+    <% arrays.each do |a| %>
+      <td align="center"><%= '%.0f' % (a.select{|w| w.color_blindness_test}.length / a.length.to_f * 100) %>%</td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Watched Video</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% num_colorblindness_tests = a.select{|w| w.color_blindness_test}.length %>
+        <% num_watched_video = a.select{|w| w.watched_video?}.length %>
+        <%= '%.0f' % (num_watched_video / num_colorblindness_tests.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Qualification</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% num_watched_video = a.select{|w| w.watched_video?}.length %>
+        <% num_qualified = a.select{|w| w.qualification}.length %>
+        <%= '%.0f' % (num_qualified / num_watched_video.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+  <tr>
+    <td>Did at least one good image</td>
+    <% arrays.each do |a| %>
+      <td align="center">
+        <% num_qualified = a.select{|w| w.qualification}.length %>
+        <% num_did_at_least_one_image = a.select{|w| w.all_done_and_accurate_identifications.length > 0}.length %>
+        <%= '%.0f' % (num_did_at_least_one_image / num_qualified.to_f * 100) %>%
+      </td>
+    <% end %>
+  </tr>
+</table>

@@ -1,0 +1,88 @@
+<a href="<%= "<anonymized>/adkdacsl_instructional_#{@worker_for_this_hit.meaningful? ? 'meaningful' : 'zero_context'}.flv" %>"
+   style="display:block;width:400px;height:300px"
+   id="player"> 
+</a>
+<script type="text/javascript">
+  //initialize the player
+  flowplayer("player", 
+    {src : "/flowplayer-<%= FilesController::FlowPlayerVer %>.swf"},
+    {clip : 
+      {scaling : 'fit'},
+      plugins : 
+        {controls : 
+          {scrubber : <%= Rails.env.development? ? 'true' : 'false' %>, play : false, fullscreen : true}
+        }
+      });
+  //let us know the video started, start the logging...
+  loop_for_log_video_event();
+  
+  //add a hook so when the video is over, it shows the controls and the questions
+  var training_video_viewed = false;
+  $f('player').onFinish(function(){
+    flowplayer("player", 
+      {src : "/flowplayer-<%= FilesController::FlowPlayerVer %>.swf"},
+      {clip : 
+        {
+          scaling : 'fit',
+          autoPlay : false,
+          onStart : function(){
+            log_video_event("start");
+          },
+          onPause : function(){
+            log_video_event("pause");
+          },
+          onResume : function(){
+            log_video_event("resume");
+          },
+          onStop : function(){
+            log_video_event("stop");
+          },
+          onSeek : function(){
+            log_video_event("seek");
+          }
+        }
+      });
+    //now show the questions and hide the caption
+    $('questions').show();
+    $('video_caption').hide();
+    //now let server know about finishing video
+    if (!training_video_viewed){
+      log_video_event("finished_video_for_the_first_time");
+      training_video_viewed = true;
+    }
+  });
+
+  //every 10 seconds send a message to the server with where we are in the video
+  var RefreshRateForTimeInVideo = 10000;
+
+
+  function loop_for_log_video_event(){
+    if (!training_video_viewed){
+      log_video_event("");
+      setTimeout(function(){
+        loop_for_log_video_event();
+      }, RefreshRateForTimeInVideo);
+    }
+  }
+  
+  function log_video_event(event_type){
+    var elapsed = $f('player').getTime();
+    var r = new Ajax.Request(
+      '/training/log_video_event',
+      {
+        method: 'post',
+        parameters: 'worker_id=' + <%= @worker_for_this_hit.id %> + '&elapsed=' + elapsed + '&event_type=' + event_type,
+        onComplete: function(response){
+          $('send_email_button').disabled = false;
+          alert(response.responseText);
+        }
+      }
+    );
+  }
+</script>
+<div id="video_caption">
+  Please pay close attention to this video. This video will explain how to identify
+  <%- if @worker_for_this_hit.meaningful? -%>cancerous tumor cells<%- else -%>objects of interest<%- end -%>.
+  Afterwards, you will be have to take a brief quiz based on the video that will be very
+  easy if you’ve watched the video.
+</div>
