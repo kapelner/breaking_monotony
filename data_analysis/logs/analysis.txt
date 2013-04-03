@@ -1,0 +1,2466 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\_GIT\bmwm_private\for_git\code\../logs/analysis.txt
+  log type:  text
+ opened on:   3 Apr 2013, 16:46:22
+
+. 
+. 
+. * Open main data file
+. use "../data/alldata.dta", clear
+
+. 
+. do "generate_analysis_vars.do"
+
+. * ------------------
+. * Generate variables for regressions(eg. interactions)
+. * ------------------
+. 
+. * Country interacted with treatment
+. gen meaning_IND=meaning*india
+
+. gen shredded_IND=shredded*india
+
+. 
+. * Country interacted with covariates
+. gen sex_IND=sex*india
+
+. 
+. * Quantities
+. gen did2=num_imgs>=2 if tag_wid
+(10739 missing values generated)
+
+. gen did5=num_imgs>=5 if tag_wid
+(10739 missing values generated)
+
+. gen did10=num_imgs>=10 if tag_wid
+(10739 missing values generated)
+
+. 
+. * Standardize quality metrics
+. foreach var of varlist qual_rec* qual_avgdist {
+  2.         quietly sum `var'
+  3.         gen std_`var' = (`var'-r(mean))/r(sd)
+  4. }
+(486 missing values generated)
+(486 missing values generated)
+(486 missing values generated)
+(486 missing values generated)
+
+. 
+. * Person-specific quality
+. egen qual_rec_2_by_person=mean(qual_rec_2), by(wid)
+(486 missing values generated)
+
+. egen qual_rec_5_by_person=mean(qual_rec_5), by(wid)
+(486 missing values generated)
+
+. 
+. * Zooming and carefulness
+. gen onezoom= (used_1stzoom | used_lastzoom)
+
+. 
+. gen very_careful=.
+(13210 missing values generated)
+
+. replace very_careful=1 if is_image==1 & used_allzoom==1 & deleted_pts==1
+(4590 real changes made)
+
+. replace very_careful=0 if is_image==1 & very_careful==.
+(8134 real changes made)
+
+. 
+. * Experience labeling
+. gen experience=.
+(13210 missing values generated)
+
+. replace experience=1 if inrange(img_order,1,5)
+(7360 real changes made)
+
+. replace experience=2 if inrange(img_order,6,10)
+(2882 real changes made)
+
+. replace experience=3 if img_order>=11
+(2968 real changes made)
+
+. cap label drop experience
+
+. label define experience 1 "1_1-5" 2 "2_6-10" 3 "3_11+"
+
+. label values experience experience
+
+. 
+. gen img1to5=experience==1
+
+. gen img6to10=experience==2
+
+. gen img11plus=experience==3
+
+. 
+. * Image order squared
+. gen img_order2=img_order^2
+(486 missing values generated)
+
+. 
+. * Speed labeling
+. gen speed_secs=secs_to_label
+(486 missing values generated)
+
+. gen speed_secs2=speed_secs^2
+(486 missing values generated)
+
+. 
+end of do-file
+
+. 
+. save "../data/alldata_analysis_ready.dta", replace
+(note: file ../data/alldata_analysis_ready.dta not found)
+file ../data/alldata_analysis_ready.dta saved
+
+. 
+. * Summary statistic and other non-regression tables
+. do "tables.do"
+
+. * -----------------------------
+. * Tables
+. * -----------------------------
+. 
+. *########################
+. * Table with basic summary stats
+. * TABLE 1 -->
+. * tab:summary_stats
+. *########################
+. if (1) {
+. * Create columns (indicated by "_grp_" variable)
+. gen _grp_1= (trt==2 & tag_wid==1)
+. gen _grp_2= (trt==1 & tag_wid==1)
+. gen _grp_3= (trt==0 & tag_wid==1)
+. gen _grp_4= (country==0 & tag_wid==1)
+. gen _grp_5= (country==1 & tag_wid==1)
+. 
+. loc num_cols = 5
+. loc num_rows = 15
+. 
+. mat table_summ_stats = J(`num_rows',`num_cols',.)
+. 
+. * Create new variables for table
+. gen num_imgs_ifnon0 = num_imgs if num_imgs > 0 
+(486 missing values generated)
+. 
+. 
+. forvalues c = 1/`num_cols' {
+  2.         * Variables used in summary statistics
+.         * --------
+.         * Quantity variables: num_imgs_ifnon0, induced, did2, did5
+.         * Quality variables: qual_rec2, qual_rec5
+.         * Demographics: sex, age
+.         * Other: hourly wage, meaningful level
+.         
+.         * -------------------
+.         * Quantity variables
+.         * -------------------
+. 
+.         * Induced to work
+.         quietly sum induced if (_grp_`c'==1) 
+  3.         mat table_summ_stats[1,`c'] = round(r(mean),.001)
+  4. 
+.         * num_imgs_ifnon0
+.         quietly sum num_imgs_ifnon0 if (_grp_`c'==1) 
+  5.         mat table_summ_stats[2,`c'] = round(r(mean),.001)
+  6.         mat table_summ_stats[3,`c'] = round(r(sd),.001)
+  7. 
+.         * Labeled 2 or more images
+.         quietly sum did2 if (_grp_`c'==1) 
+  8.         mat table_summ_stats[4,`c'] = round(r(mean),.001)
+  9. 
+.         * Labeled 5 or more images
+.         quietly sum did5 if (_grp_`c'==1) 
+ 10.         mat table_summ_stats[5,`c'] = round(r(mean),.001)
+ 11. 
+.         * -------------------
+.         * Quality variables
+.         * -------------------
+. 
+.         * Recall at 5 pixels
+.         quietly sum qual_rec_5_by_person if (_grp_`c'==1)
+ 12.         mat table_summ_stats[6,`c'] = round(r(mean)/100,.001)
+ 13.         mat table_summ_stats[7,`c'] = round(r(sd)/100,.001)
+ 14.         
+.         * Recall at 2 pixels
+.         quietly sum qual_rec_2_by_person if (_grp_`c'==1) 
+ 15.         mat table_summ_stats[8,`c'] = round(r(mean)/100,.001)
+ 16.         mat table_summ_stats[9,`c'] = round(r(sd)/100,.001)
+ 17.         
+.         * -------------------
+.         * Demographics
+.         * -------------------
+. 
+.         * Gender
+.         quietly sum sex if (_grp_`c'==1)
+ 18.         mat table_summ_stats[10,`c'] = round(r(mean),.001)
+ 19. 
+.         * Age
+.         quietly sum age if (_grp_`c'==1) 
+ 20.         mat table_summ_stats[11,`c'] = round(r(mean),.1)
+ 21.         mat table_summ_stats[12,`c'] = round(r(sd),.1)
+ 22.         
+. 
+.         * -------------------
+.         * Other
+.         * -------------------
+. 
+.         quietly sum meaningful_level if (_grp_`c'==1) 
+ 23.         mat table_summ_stats[13,`c'] = round(r(mean),.01)
+ 24.         mat table_summ_stats[14,`c'] = round(r(sd),.01)
+ 25. 
+.         * N
+.         quietly sum wid if (_grp_`c'==1)
+ 26.         mat table_summ_stats[15,`c'] = r(N)
+ 27. }
+. 
+. mat rownames table_summ_stats= "PctInduced" "ImgsifNon0" "ImgsifNon0-sd" "Did2" "Did5" "Rec5" "Rec5-sd"  "Rec2" "Rec2-sd" "Gender" "Age" "Age-sd" "SurveyMeaning" "SurveyMeaning-sd" "Ntot"
+. mat colnames table_summ_stats= Shredded ZeroContext Meaning USonly INonly
+. 
+. mat list table_summ_stats
+
+table_summ_stats[15,5]
+                 Shredded  ZeroContext      Meaning       USonly       INonly
+  PctInduced         .723         .806         .762          .85         .666
+  ImgsifNon0        5.939        7.119        6.109        5.862        7.174
+ImgsifNon0~d        6.781        7.663        6.862        6.149        8.281
+        Did2         .696          .75         .706         .797         .627
+        Did5         .343         .456         .371         .406         .373
+        Rec5         .883          .93         .904         .924         .881
+     Rec5-sd         .209         .135         .182         .149         .209
+        Rec2         .614         .676         .651         .668         .621
+     Rec2-sd         .217         .183         .206         .186         .223
+      Gender         .616         .615          .58         .483         .743
+         Age         29.6         29.3         29.6         31.8         26.9
+      Age-sd          9.3          9.1          9.5         10.5          6.8
+SurveyMean~g         3.44         4.37         3.54         3.67         3.98
+SurveyMean~d         1.26           .9         1.19         1.27         1.06
+        Ntot          828          845          798         1318         1153
+.         
+. * Export summary statistics table
+. * TABLE 1--> tab:summary_stats
+. outtable using "../output/tab_summary_stats", mat(table_summ_stats) asis replace caption("Summary statistics, by country and treatment") clabel("tab:summary_stats")
+(note: file ../output/tab_summary_stats.tex not found)
+. }       
+
+.                 
+. * Induced to work
+. * -----------------
+. tab trt country if tag_wid
+
+    Treatment |        Country
+        Group |      0_US       1_IN |     Total
+--------------+----------------------+----------
+0_ZeroContext |       426        372 |       798 
+    1_Meaning |       442        403 |       845 
+   2_Shredded |       450        378 |       828 
+--------------+----------------------+----------
+        Total |     1,318      1,153 |     2,471 
+
+
+. table trt country if tag_wid, c(mean induced) format(%10.3f) col
+
+note: cellwidth too small, variable name truncated;
+      to increase cellwidth, specify cellwidth(#)
+
+--------------------------------------------------
+Treatment     |              Country              
+Group         |       0_US        1_IN       Total
+--------------+-----------------------------------
+0_ZeroContext |      0.840       0.672       0.762
+    1_Meaning |      0.887       0.717       0.806
+   2_Shredded |      0.822       0.606       0.723
+--------------------------------------------------
+
+. 
+. * Table for percent "induced to work" by trt and country
+. * tab:sumstats_induced
+. if (1) {
+. mat InducedByGroup=(.,.,.\.,.,.\.,.,.)
+. 
+. quietly sum induced if trt==0 & country==0 & tag_wid==1
+. mat InducedByGroup[1,1]=round(r(mean),.001)
+. quietly sum induced if trt==1 & country==0 & tag_wid==1
+. mat InducedByGroup[2,1]=round(r(mean),.001)
+. quietly sum induced if trt==2 & country==0 & tag_wid==1
+. mat InducedByGroup[3,1]=round(r(mean),.001)
+. 
+. quietly sum induced if trt==0 & country==1 & tag_wid==1
+. mat InducedByGroup[1,2]=round(r(mean),.001)
+. quietly sum induced if trt==1 & country==1 & tag_wid==1
+. mat InducedByGroup[2,2]=round(r(mean),.001)
+. quietly sum induced if trt==2 & country==1 & tag_wid==1
+. mat InducedByGroup[3,2]=round(r(mean),.001)
+. 
+. quietly sum induced if trt==0 & tag_wid==1
+. mat InducedByGroup[1,3]=round(r(mean),.001)
+. quietly sum induced if trt==1 & tag_wid==1
+. mat InducedByGroup[2,3]=round(r(mean),.001)
+. quietly sum induced if trt==2 & tag_wid==1
+. mat InducedByGroup[3,3]=round(r(mean),.001)
+. 
+. mat rownames InducedByGroup= ZeroContext Meaning Shredded
+. mat colnames InducedByGroup= US India Total
+. 
+. * tab:sumstats_induced
+. outtable using "../output/InducedByGroup", mat(InducedByGroup) asis replace caption("Mean Percent Induced, by country and treatment") clabel("InducedByGroup")
+(note: file ../output/InducedByGroup.tex not found)
+. 
+. }
+
+. 
+.         
+. * Number of images
+. * -----------------
+.         * Overall
+.         table trt country if tag_wid, c(mean num_imgs) format(%10.2f) col
+
+note: cellwidth too small, variable name truncated;
+      to increase cellwidth, specify cellwidth(#)
+
+--------------------------------------------------
+Treatment     |              Country              
+Group         |       0_US        1_IN       Total
+--------------+-----------------------------------
+0_ZeroContext |       5.29        4.49        4.91
+    1_Meaning |       5.69        6.12        5.90
+   2_Shredded |       4.46        4.79        4.61
+--------------------------------------------------
+
+. 
+.         * Table for number of images by trt and country
+.         * tab:sumstats_numimgs
+.         if (1) {
+.         mat ImgsByGroup=(.,.,.\.,.,.\.,.,.)
+. 
+.         quietly sum num_imgs if trt==0 & country==0 & tag_wid==1
+.         mat ImgsByGroup[1,1]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & country==0 & tag_wid==1
+.         mat ImgsByGroup[2,1]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & country==0 & tag_wid==1
+.         mat ImgsByGroup[3,1]=round(r(mean),.1)
+. 
+.         quietly sum num_imgs if trt==0 & country==1 & tag_wid==1
+.         mat ImgsByGroup[1,2]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & country==1 & tag_wid==1
+.         mat ImgsByGroup[2,2]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & country==1 & tag_wid==1
+.         mat ImgsByGroup[3,2]=round(r(mean),.1)
+. 
+.         quietly sum num_imgs if trt==0 & tag_wid==1
+.         mat ImgsByGroup[1,3]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & tag_wid==1
+.         mat ImgsByGroup[2,3]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & tag_wid==1
+.         mat ImgsByGroup[3,3]=round(r(mean),.1)
+. 
+.         mat rownames ImgsByGroup= ZeroContext Meaning Shredded
+.         mat colnames ImgsByGroup= US India Total
+.         
+.         * tab:sumstats_numimgs
+.         outtable using "../output/ImgsByGroup", mat(ImgsByGroup) asis replace caption("Mean Total Images, by country and treatment") clabel("ImgsByGroup")
+(note: file ../output/ImgsByGroup.tex not found)
+.         }       
+
+.         
+.         * COP
+.         table trt country if tag_wid, c(mean num_imgs) format(%10.2f) col
+
+note: cellwidth too small, variable name truncated;
+      to increase cellwidth, specify cellwidth(#)
+
+--------------------------------------------------
+Treatment     |              Country              
+Group         |       0_US        1_IN       Total
+--------------+-----------------------------------
+0_ZeroContext |       5.29        4.49        4.91
+    1_Meaning |       5.69        6.12        5.90
+   2_Shredded |       4.46        4.79        4.61
+--------------------------------------------------
+
+. 
+.         * Table for number of images (COP) by trt and country
+.         * tab:sumstats_numimgsCOP
+.         if (1) {
+.         mat ImgsByGroup_COP=(.,.,.\.,.,.\.,.,.)
+. 
+.         quietly sum num_imgs if trt==0 & country==0 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[1,1]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & country==0 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[2,1]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & country==0 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[3,1]=round(r(mean),.1)
+. 
+.         quietly sum num_imgs if trt==0 & country==1 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[1,2]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & country==1 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[2,2]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & country==1 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[3,2]=round(r(mean),.1)
+. 
+.         quietly sum num_imgs if trt==0 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[1,3]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==1 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[2,3]=round(r(mean),.1)
+.         quietly sum num_imgs if trt==2 & tag_wid==1 & induced==1
+.         mat ImgsByGroup_COP[3,3]=round(r(mean),.1)
+. 
+.         mat rownames ImgsByGroup_COP= ZeroContext Meaning Shredded
+.         mat colnames ImgsByGroup_COP= US India Total
+. 
+.         * tab:sumstats_numimgsCOP
+.         outtable using "../output/ImgsByGroup_COP", mat(ImgsByGroup_COP) asis replace caption("Mean Total Images (COP), by country and treatment") clabel("ImgsByGroup_COP")
+(note: file ../output/ImgsByGroup_COP.tex not found)
+.         }               
+
+. 
+. 
+. * Quality of images
+. * ------------------
+. 
+.         * Overall
+.         table trt country if tag_wid, c(mean qual_rec_2) format(%10.2f) col
+
+note: cellwidth too small, variable name truncated;
+      to increase cellwidth, specify cellwidth(#)
+
+--------------------------------------------------
+Treatment     |              Country              
+Group         |       0_US        1_IN       Total
+--------------+-----------------------------------
+0_ZeroContext |      67.96       63.24       65.98
+    1_Meaning |      71.80       65.08       68.88
+   2_Shredded |      66.82       61.10       64.55
+--------------------------------------------------
+
+. 
+.         * Table for quality (rec2) by trt and country
+.         * tab:sumstats_qual
+.         if (1) {
+.         mat QualByGroup=(.,.,.\.,.,.\.,.,.)
+. 
+.         quietly sum qual_rec_2 if trt==0 & country==0 & tag_wid==1
+.         mat QualByGroup[1,1]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==1 & country==0 & tag_wid==1
+.         mat QualByGroup[2,1]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==2 & country==0 & tag_wid==1
+.         mat QualByGroup[3,1]=round(r(mean),.1)
+. 
+.         quietly sum qual_rec_2 if trt==0 & country==1 & tag_wid==1
+.         mat QualByGroup[1,2]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==1 & country==1 & tag_wid==1
+.         mat QualByGroup[2,2]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==2 & country==1 & tag_wid==1
+.         mat QualByGroup[3,2]=round(r(mean),.1)
+. 
+.         quietly sum qual_rec_2 if trt==0 & tag_wid==1
+.         mat QualByGroup[1,3]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==1 & tag_wid==1
+.         mat QualByGroup[2,3]=round(r(mean),.1)
+.         quietly sum qual_rec_2 if trt==2 & tag_wid==1
+.         mat QualByGroup[3,3]=round(r(mean),.1)
+. 
+.         mat rownames QualByGroup= ZeroContext Meaning Shredded
+.         mat colnames QualByGroup= US India Total
+.         
+.         * tab:sumstats_qual
+.         outtable using "../output/QualByGroup", mat(QualByGroup) asis replace caption("Mean Quality (rec2), by country and treatment") clabel("QualByGroup")
+(note: file ../output/QualByGroup.tex not found)
+.         }       
+
+.         
+. 
+end of do-file
+
+. 
+. * Regressions, figures and graphs
+. do "regressions.do"
+
+. * ---------------
+. * Regressions
+. * ---------------
+. 
+. 
+. * #################
+. * Quantity all
+. * TABLE 3--> tab:quantity_main
+. * #################
+. if (1) {
+. estimates clear
+. 
+. reg induced meaning shredded india if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F(  3,  2467) =   45.66
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0536
+                                                       Root MSE      =  .41339
+
+------------------------------------------------------------------------------
+             |               Robust
+     induced |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0460013    .019894     2.31   0.021     .0069907    .0850119
+    shredded |  -.0402578    .021149    -1.90   0.057    -.0817294    .0012139
+       india |  -.1848825   .0169704   -10.89   0.000    -.2181602   -.1516049
+       _cons |   .8480906   .0157766    53.76   0.000     .8171538    .8790274
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model1
+. 
+. reg induced meaning shredded india sex i.(age_grp tod dow) if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F( 17,  2453) =    9.97
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0625
+                                                       Root MSE      =   .4126
+
+------------------------------------------------------------------------------
+             |               Robust
+     induced |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |    .045577   .0199715     2.28   0.023     .0064142    .0847398
+    shredded |  -.0369505   .0212596    -1.74   0.082    -.0786392    .0047381
+       india |  -.1827834   .0181216   -10.09   0.000    -.2183186   -.1472483
+         sex |    .005959   .0175279     0.34   0.734     -.028412      .04033
+             |
+     age_grp |
+          1  |   .0008631   .0191845     0.04   0.964    -.0367564    .0384825
+          2  |  -.0254902   .0269829    -0.94   0.345    -.0784017    .0274214
+          3  |  -.0253839   .0353146    -0.72   0.472    -.0946334    .0438655
+          4  |  -.1194885   .0572699    -2.09   0.037    -.2317908   -.0071861
+             |
+         tod |
+          1  |  -.0590323   .0281423    -2.10   0.036    -.1142175   -.0038472
+          2  |   -.031562   .0241219    -1.31   0.191    -.0788634    .0157394
+          3  |   -.044874   .0241094    -1.86   0.063    -.0921509    .0024028
+             |
+         dow |
+          1  |   .0199082   .0315674     0.63   0.528    -.0419933    .0818097
+          2  |  -.0592672   .0315878    -1.88   0.061    -.1212086    .0026743
+          3  |  -.0542539    .030654    -1.77   0.077    -.1143642    .0058565
+          4  |     -.0246   .0321743    -0.76   0.445    -.0876915    .0384915
+          5  |   .0081146   .0288924     0.28   0.779    -.0485415    .0647708
+          6  |  -.0161875   .0311815    -0.52   0.604    -.0773323    .0449573
+             |
+       _cons |   .9073261   .0353258    25.68   0.000     .8380546    .9765975
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  2453) =    1.40
+            Prob > F =    0.2303
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  2453) =    1.73
+            Prob > F =    0.1596
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  2453) =    1.89
+            Prob > F =    0.0788
+. estadd scalar dowVars = r(p)
+. estimates store model2
+. 
+. reg did2 meaning shredded india if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F(  3,  2467) =   32.72
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0385
+                                                       Root MSE      =  .44181
+
+------------------------------------------------------------------------------
+             |               Robust
+        did2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0466154   .0215656     2.16   0.031     .0043268    .0889039
+    shredded |  -.0115051    .022346    -0.51   0.607     -.055324    .0323138
+       india |  -.1704184   .0180298    -9.45   0.000    -.2057736   -.1350633
+       _cons |    .784957    .017237    45.54   0.000     .7511565    .8187574
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model3
+. 
+. reg did2 meaning shredded india sex i.(age_grp tod dow) if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F( 17,  2453) =    8.25
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0514
+                                                       Root MSE      =  .44009
+
+------------------------------------------------------------------------------
+             |               Robust
+        did2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0497568   .0215569     2.31   0.021     .0074852    .0920283
+    shredded |  -.0049457   .0223648    -0.22   0.825    -.0488016    .0389103
+       india |  -.1555056   .0194101    -8.01   0.000    -.1935674   -.1174438
+         sex |  -.0293601   .0187906    -1.56   0.118    -.0662071    .0074869
+             |
+     age_grp |
+          1  |  -.0042988   .0204468    -0.21   0.833    -.0443936    .0357961
+          2  |   -.033996   .0286236    -1.19   0.235     -.090125     .022133
+          3  |  -.0198718   .0373272    -0.53   0.595    -.0930679    .0533243
+          4  |  -.1176651   .0605051    -1.94   0.052    -.2363115    .0009813
+             |
+         tod |
+          1  |  -.0522671   .0296598    -1.76   0.078    -.1104279    .0058938
+          2  |  -.0591057   .0260881    -2.27   0.024    -.1102627   -.0079486
+          3  |  -.0678294   .0260524    -2.60   0.009    -.1189163   -.0167425
+             |
+         dow |
+          1  |  -.0132991   .0358789    -0.37   0.711    -.0836552    .0570569
+          2  |  -.0742194   .0340231    -2.18   0.029    -.1409363   -.0075025
+          3  |  -.0644035   .0333317    -1.93   0.053    -.1297646    .0009577
+          4  |  -.0040874   .0346156    -0.12   0.906    -.0719662    .0637915
+          5  |   .0462625   .0311092     1.49   0.137    -.0147405    .1072656
+          6  |  -.0068607   .0337354    -0.20   0.839    -.0730136    .0592921
+             |
+       _cons |   .8728917   .0371205    23.52   0.000     .8001009    .9456825
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  2453) =    1.24
+            Prob > F =    0.2937
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  2453) =    2.46
+            Prob > F =    0.0607
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  2453) =    3.52
+            Prob > F =    0.0018
+. estadd scalar dowVars = r(p)
+. estimates store model4
+. 
+. reg did5  meaning shredded india if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F(  3,  2467) =    9.04
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0110
+                                                       Root MSE      =  .48556
+
+------------------------------------------------------------------------------
+             |               Robust
+        did5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0850658   .0241969     3.52   0.000     .0376174    .1325142
+    shredded |  -.0282655   .0237759    -1.19   0.235    -.0748883    .0183573
+       india |   -.034567   .0195683    -1.77   0.077     -.072939     .003805
+       _cons |   .3870413   .0194924    19.86   0.000     .3488181    .4252644
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model5
+. 
+. reg did5 meaning shredded india sex i.(age_grp tod dow) if tag_wid, robust
+
+Linear regression                                      Number of obs =    2471
+                                                       F( 17,  2453) =    3.01
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0205
+                                                       Root MSE      =  .48461
+
+------------------------------------------------------------------------------
+             |               Robust
+        did5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |     .08797   .0242036     3.63   0.000     .0405084    .1354315
+    shredded |  -.0231035   .0238401    -0.97   0.333    -.0698524    .0236453
+       india |  -.0033337   .0211517    -0.16   0.875    -.0448108    .0381434
+         sex |  -.0808384    .021163    -3.82   0.000    -.1223376   -.0393392
+             |
+     age_grp |
+          1  |  -.0080608   .0225444    -0.36   0.721    -.0522688    .0361473
+          2  |  -.0194092   .0317491    -0.61   0.541     -.081667    .0428487
+          3  |   .0201539   .0437571     0.46   0.645    -.0656509    .1059586
+          4  |   .0159091   .0633042     0.25   0.802     -.108226    .1400442
+             |
+         tod |
+          1  |  -.0480635   .0350972    -1.37   0.171    -.1168868    .0207598
+          2  |   -.040202   .0314178    -1.28   0.201      -.10181    .0214061
+          3  |  -.0479669   .0313891    -1.53   0.127    -.1095188     .013585
+             |
+         dow |
+          1  |  -.0081221   .0405875    -0.20   0.841    -.0877115    .0714673
+          2  |  -.0387157   .0363265    -1.07   0.287    -.1099495     .032518
+          3  |   .0167085   .0367495     0.45   0.649    -.0553548    .0887717
+          4  |   .0127897   .0386972     0.33   0.741    -.0630929    .0886724
+          5  |    .029282   .0360605     0.81   0.417    -.0414301    .0999942
+          6  |  -.0067891   .0381299    -0.18   0.859    -.0815593    .0679811
+             |
+       _cons |   .4598622     .04369    10.53   0.000     .3741892    .5455352
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  2453) =    0.24
+            Prob > F =    0.9157
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  2453) =    0.87
+            Prob > F =    0.4561
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  2453) =    0.83
+            Prob > F =    0.5455
+. estadd scalar dowVars = r(p)
+. estimates store model6
+. 
+. * tab:quantity_main
+. esttab model1 model2 model3 model4 model5 model6 using "../output/tab_quantity_main.tex", cells(b(star fmt(3)) se(par fmt(3))) starlevels(* .05 ** .01 *** .001) stats(ageVars todVars dowVars N r2,fmt(2)) keep(me
+> aning shredded india sex *age_grp _cons) style(tex) replace addnotes("* .05 ** .01 *** .001" "This table shows the main treatment effects for the full sample. Columns 1, 3 and 5 only include treatments and count
+> ry. Columns 2, 4, and 6 control for gender, age categories, time of day, and day of week.")
+(note: file ../output/tab_quantity_main.tex not found)
+(output written to ../output/tab_quantity_main.tex)
+. *"
+. estimates clear
+.         
+. }
+
+. 
+. 
+. * #################
+. * Quantity by country
+. * NOT IN PAPER
+. * tab:quantity_bycountry
+. * #################
+. if (1) {
+. estimates clear
+. 
+. reg induced meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 0, robust
+
+Linear regression                                      Number of obs =    1318
+                                                       F( 16,  1301) =    2.25
+                                                       Prob > F      =  0.0031
+                                                       R-squared     =  0.0261
+                                                       Root MSE      =   .3549
+
+------------------------------------------------------------------------------
+             |               Robust
+     induced |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0424775   .0236899     1.79   0.073    -.0039972    .0889522
+    shredded |  -.0201591   .0256511    -0.79   0.432    -.0704811     .030163
+         sex |   .0047845   .0197703     0.24   0.809    -.0340007    .0435697
+             |
+     age_grp |
+          1  |   .0054465   .0229786     0.24   0.813    -.0396326    .0505256
+          2  |  -.0192574   .0301121    -0.64   0.523    -.0783311    .0398162
+          3  |  -.0515929   .0390159    -1.32   0.186    -.1281338     .024948
+          4  |  -.1087828   .0600377    -1.81   0.070    -.2265642    .0089985
+             |
+         tod |
+          1  |  -.0713463   .0321844    -2.22   0.027    -.1344854   -.0082073
+          2  |  -.0583202   .0263422    -2.21   0.027     -.109998   -.0066425
+          3  |  -.0232264   .0257634    -0.90   0.367    -.0737687    .0273158
+             |
+         dow |
+          1  |  -.0184292     .03298    -0.56   0.576    -.0831291    .0462706
+          2  |  -.0636759   .0382099    -1.67   0.096    -.1386356    .0112839
+          3  |  -.0895364   .0343172    -2.61   0.009    -.1568595   -.0222134
+          4  |  -.0851919   .0366353    -2.33   0.020    -.1570627   -.0133212
+          5  |  -.0445643   .0314902    -1.42   0.157    -.1063413    .0172127
+          6  |  -.0520318   .0342437    -1.52   0.129    -.1192107    .0151471
+             |
+       _cons |   .9411176   .0403292    23.34   0.000     .8620003    1.020235
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1301) =    1.45
+            Prob > F =    0.2158
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1301) =    2.49
+            Prob > F =    0.0589
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1301) =    1.74
+            Prob > F =    0.1080
+. estadd scalar dowVars = r(p)
+. estimates store model1
+. 
+. reg did2 meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 0, robust
+
+Linear regression                                      Number of obs =    1318
+                                                       F( 16,  1301) =    1.76
+                                                       Prob > F      =  0.0309
+                                                       R-squared     =  0.0203
+                                                       Root MSE      =  .40098
+
+------------------------------------------------------------------------------
+             |               Robust
+        did2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0500707   .0268908     1.86   0.063    -.0026834    .1028249
+    shredded |  -.0052488   .0282521    -0.19   0.853    -.0606734    .0501759
+         sex |  -.0254338   .0223712    -1.14   0.256    -.0693213    .0184537
+             |
+     age_grp |
+          1  |  -.0079108   .0265489    -0.30   0.766    -.0599941    .0441724
+          2  |  -.0228402   .0335128    -0.68   0.496    -.0885852    .0429047
+          3  |  -.0334329   .0412869    -0.81   0.418    -.1144291    .0475634
+          4  |  -.1278442   .0648203    -1.97   0.049     -.255008   -.0006804
+             |
+         tod |
+          1  |  -.0604357   .0352492    -1.71   0.087    -.1295873    .0087159
+          2  |  -.0816791   .0299818    -2.72   0.007    -.1404971    -.022861
+          3  |  -.0526338   .0296658    -1.77   0.076    -.1108318    .0055643
+             |
+         dow |
+          1  |   -.021164   .0425255    -0.50   0.619      -.10459     .062262
+          2  |  -.0480509   .0463219    -1.04   0.300    -.1389246    .0428229
+          3  |  -.0598085   .0413209    -1.45   0.148    -.1408713    .0212543
+          4  |  -.0354765   .0427183    -0.83   0.406    -.1192807    .0483278
+          5  |   .0250025   .0375334     0.67   0.505    -.0486302    .0986352
+          6  |   .0151503   .0398325     0.38   0.704    -.0629925    .0932932
+             |
+       _cons |   .8787858   .0436739    20.12   0.000     .7931069    .9644647
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1301) =    1.09
+            Prob > F =    0.3576
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1301) =    2.56
+            Prob > F =    0.0535
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1301) =    1.31
+            Prob > F =    0.2503
+. estadd scalar dowVars = r(p)
+. estimates store model2
+. 
+. reg did5 meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 0, robust
+
+Linear regression                                      Number of obs =    1318
+                                                       F( 16,  1301) =    2.88
+                                                       Prob > F      =  0.0001
+                                                       R-squared     =  0.0325
+                                                       Root MSE      =  .48616
+
+------------------------------------------------------------------------------
+             |               Robust
+        did5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0949686   .0337127     2.82   0.005     .0288314    .1611058
+    shredded |   -.037178   .0328093    -1.13   0.257     -.101543     .027187
+         sex |  -.1086196   .0271807    -4.00   0.000    -.1619424   -.0552969
+             |
+     age_grp |
+          1  |  -.0148489   .0331723    -0.45   0.654     -.079926    .0502282
+          2  |  -.0503412   .0411271    -1.22   0.221    -.1310238    .0303414
+          3  |  -.0102565   .0499294    -0.21   0.837    -.1082074    .0876944
+          4  |   -.006781   .0694332    -0.10   0.922    -.1429943    .1294322
+             |
+         tod |
+          1  |  -.1002853   .0450799    -2.22   0.026    -.1887225   -.0118481
+          2  |  -.0570718    .039807    -1.43   0.152    -.1351648    .0210212
+          3  |  -.0618006   .0400727    -1.54   0.123    -.1404148    .0168136
+             |
+         dow |
+          1  |  -.0358759   .0525818    -0.68   0.495    -.1390302    .0672785
+          2  |  -.0213291   .0546432    -0.39   0.696    -.1285275    .0858693
+          3  |   .0035391   .0501535     0.07   0.944    -.0948515    .1019298
+          4  |  -.0243763    .051428    -0.47   0.636    -.1252671    .0765145
+          5  |   .0319706   .0487255     0.66   0.512    -.0636187    .1275598
+          6  |   .0109201    .051078     0.21   0.831    -.0892842    .1111244
+             |
+       _cons |   .5121603   .0561808     9.12   0.000     .4019454    .6223753
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1301) =    0.39
+            Prob > F =    0.8128
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1301) =    1.69
+            Prob > F =    0.1677
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1301) =    0.46
+            Prob > F =    0.8389
+. estadd scalar dowVars = r(p)
+. estimates store model3
+. 
+. 
+. reg induced meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 1, robust
+
+Linear regression                                      Number of obs =    1153
+                                                       F( 16,  1136) =    1.72
+                                                       Prob > F      =  0.0374
+                                                       R-squared     =  0.0232
+                                                       Root MSE      =  .46958
+
+------------------------------------------------------------------------------
+             |               Robust
+     induced |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0453627   .0330185     1.37   0.170    -.0194214    .1101468
+    shredded |  -.0652666   .0350204    -1.86   0.063    -.1339786    .0034454
+         sex |   .0053655   .0324822     0.17   0.869    -.0583664    .0690974
+             |
+     age_grp |
+          1  |  -.0058237   .0302499    -0.19   0.847    -.0651756    .0535282
+          2  |  -.0263545   .0521465    -0.51   0.613    -.1286688    .0759597
+          3  |   .1219553   .0833153     1.46   0.144    -.0415139    .2854244
+          4  |  -.1467177   .1742747    -0.84   0.400    -.4886541    .1952187
+             |
+         tod |
+          1  |  -.0362097   .0540767    -0.67   0.503    -.1423112    .0698917
+          2  |   .0072863   .0495213     0.15   0.883    -.0898771    .1044497
+          3  |  -.0534763   .0493243    -1.08   0.279    -.1502533    .0433008
+             |
+         dow |
+          1  |   .0714707   .0610873     1.17   0.242    -.0483859    .1913274
+          2  |  -.0278829   .0499396    -0.56   0.577    -.1258671    .0701014
+          3  |   -.005345   .0534345    -0.10   0.920    -.1101864    .0994965
+          4  |   .0554495   .0560554     0.99   0.323    -.0545343    .1654333
+          5  |   .0798144   .0520967     1.53   0.126    -.0224022     .182031
+          6  |   .0397546   .0566461     0.70   0.483    -.0713881    .1508972
+             |
+       _cons |   .6719455   .0688922     9.75   0.000     .5367752    .8071158
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1136) =    0.85
+            Prob > F =    0.4929
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1136) =    1.28
+            Prob > F =    0.2806
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1136) =    1.45
+            Prob > F =    0.1927
+. estadd scalar dowVars = r(p)
+. estimates store model4
+. 
+. reg did2 meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 1, robust
+
+Linear regression                                      Number of obs =    1153
+                                                       F( 16,  1136) =    1.61
+                                                       Prob > F      =  0.0594
+                                                       R-squared     =  0.0206
+                                                       Root MSE      =  .48214
+
+------------------------------------------------------------------------------
+             |               Robust
+        did2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |    .048835   .0345139     1.41   0.157    -.0188832    .1165531
+    shredded |  -.0091113   .0356617    -0.26   0.798    -.0790816    .0608589
+         sex |  -.0366815   .0330683    -1.11   0.268    -.1015633    .0282004
+             |
+     age_grp |
+          1  |  -.0005374   .0309888    -0.02   0.986    -.0613392    .0602643
+          2  |  -.0547979      .0529    -1.04   0.300    -.1585905    .0489947
+          3  |   .0418021   .0932974     0.45   0.654    -.1412525    .2248566
+          4  |  -.0113462   .1765589    -0.06   0.949    -.3577644     .335072
+             |
+         tod |
+          1  |  -.0380332   .0552049    -0.69   0.491    -.1463482    .0702818
+          2  |  -.0302598   .0512394    -0.59   0.555    -.1307943    .0702747
+          3  |  -.0742744   .0507923    -1.46   0.144    -.1739317    .0253829
+             |
+         dow |
+          1  |   .0007449   .0635408     0.01   0.991    -.1239257    .1254155
+          2  |  -.0817086   .0510348    -1.60   0.110    -.1818417    .0184245
+          3  |  -.0665543   .0543718    -1.22   0.221    -.1732348    .0401261
+          4  |   .0386344   .0572374     0.67   0.500    -.0736686    .1509373
+          5  |   .0784078   .0524419     1.50   0.135     -.024486    .1813016
+          6  |  -.0336218   .0587141    -0.57   0.567     -.148822    .0815784
+             |
+       _cons |   .7061536   .0703652    10.04   0.000     .5680931     .844214
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1136) =    0.36
+            Prob > F =    0.8365
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1136) =    0.98
+            Prob > F =    0.4026
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1136) =    2.83
+            Prob > F =    0.0097
+. estadd scalar dowVars = r(p)
+. estimates store model5
+. 
+. reg did5 meaning shredded sex i.(age_grp tod dow) if tag_wid & india == 1, robust
+
+Linear regression                                      Number of obs =    1153
+                                                       F( 16,  1136) =    1.25
+                                                       Prob > F      =  0.2221
+                                                       R-squared     =  0.0172
+                                                       Root MSE      =  .48297
+
+------------------------------------------------------------------------------
+             |               Robust
+        did5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0835513   .0350653     2.38   0.017     .0147513    .1523514
+    shredded |  -.0065864   .0348541    -0.19   0.850    -.0749721    .0617992
+         sex |  -.0359972   .0339872    -1.06   0.290     -.102682    .0306875
+             |
+     age_grp |
+          1  |   .0053884   .0312552     0.17   0.863    -.0559361    .0667129
+          2  |   .0398701   .0528804     0.75   0.451    -.0638841    .1436244
+          3  |   .1296019   .0993069     1.31   0.192    -.0652437    .3244475
+          4  |   .1583399    .178416     0.89   0.375     -.191722    .5084019
+             |
+         tod |
+          1  |   .0353593   .0568349     0.62   0.534    -.0761539    .1468725
+          2  |   .0063215   .0521958     0.12   0.904    -.0960895    .1087325
+          3  |  -.0038728   .0514439    -0.08   0.940    -.1048085    .0970629
+             |
+         dow |
+          1  |   .0494987   .0649189     0.76   0.446    -.0778759    .1768732
+          2  |  -.0411325   .0500348    -0.82   0.411    -.1393036    .0570386
+          3  |   .0400723   .0543881     0.74   0.461    -.0666402    .1467848
+          4  |   .0610378   .0589695     1.04   0.301    -.0546636    .1767392
+          5  |   .0232962   .0542683     0.43   0.668    -.0831812    .1297735
+          6  |  -.0227803   .0574613    -0.40   0.692    -.1355226    .0899619
+             |
+       _cons |   .3450557   .0702065     4.91   0.000     .2073066    .4828047
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1136) =    0.71
+            Prob > F =    0.5836
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1136) =    0.32
+            Prob > F =    0.8113
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1136) =    1.12
+            Prob > F =    0.3507
+. estadd scalar dowVars = r(p)
+. estimates store model6
+. 
+. * tab:quantity_bycountry
+. esttab model1 model2 model3 model4 model5 model6 using "../output/tab_quantity_bycountry.tex", cells(b(star fmt(3)) se(par fmt(3))) starlevels(* .05 ** .01 *** .001) stats(ageVars todVars dowVars N r2,fmt(2)) ke
+> ep(meaning shredded sex *age_grp _cons) style(tex) replace addnotes("* .05 ** .01 *** .001" "Cols 1 through 3 show US, 4 through 6 show India. All models control for gender, age categories, time of day, and day 
+> of week.")
+(note: file ../output/tab_quantity_bycountry.tex not found)
+(output written to ../output/tab_quantity_bycountry.tex)
+. *"
+. estimates clear
+.         
+. }
+
+. 
+. * ###############
+. * Quality (Combined and by country)
+. * TABLE 4 --> tab:quality_regs_2
+. * Additional code for sensitivity (not in paper) quality_regs_5
+. * ###############
+. 
+. * Quality and instruction following by treatment
+. if (1) {
+. estimates clear
+. replace qual_rec_2=qual_rec_2/100
+(12669 real changes made)
+. reg qual_rec_2 meaning shredded india, robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F(  3,  1984) =    9.79
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0386
+                                                       Root MSE      =  .21772
+
+                                 (Std. Err. adjusted for 1985 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0068274   .0171901     0.40   0.691    -.0268852      .04054
+    shredded |  -.0717453   .0206502    -3.47   0.001    -.1122436   -.0312471
+       india |  -.0525987   .0151086    -3.48   0.001    -.0822291   -.0229684
+       _cons |   .6657836   .0159505    41.74   0.000     .6345022    .6970651
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model1
+. 
+. reg qual_rec_2 meaning shredded india sex img6to10 img11plus i.(image_name age_grp tod dow), robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F( 28,  1984) =   14.11
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1484
+                                                       Root MSE      =  .20512
+
+                                 (Std. Err. adjusted for 1985 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0137241   .0138754     0.99   0.323    -.0134878    .0409359
+    shredded |  -.0739305   .0167434    -4.42   0.000    -.1067669    -.041094
+       india |  -.0574234   .0131491    -4.37   0.000     -.083211   -.0316359
+         sex |   .0529325    .013412     3.95   0.000     .0266293    .0792356
+    img6to10 |  -.0182049   .0057444    -3.17   0.002    -.0294707   -.0069391
+   img11plus |  -.1399533   .0170817    -8.19   0.000    -.1734533   -.1064533
+             |
+  image_name |
+          2  |   .0189703   .0047774     3.97   0.000     .0096011    .0283394
+          3  |  -.0016453   .0049524    -0.33   0.740    -.0113577    .0080672
+          4  |    .011071   .0048573     2.28   0.023     .0015452    .0205969
+          5  |  -.0175949   .0047048    -3.74   0.000    -.0268218    -.008368
+          6  |  -.0106934   .0050129    -2.13   0.033    -.0205244   -.0008624
+          7  |   .0146163   .0047669     3.07   0.002     .0052676    .0239651
+          8  |  -.0006969   .0049874    -0.14   0.889     -.010478    .0090842
+          9  |   .0393265   .0054111     7.27   0.000     .0287145    .0499385
+         10  |   .0067325   .0049164     1.37   0.171    -.0029094    .0163744
+             |
+     age_grp |
+          1  |   .0330859   .0138965     2.38   0.017     .0058327    .0603392
+          2  |   .0154104   .0201332     0.77   0.444     -.024074    .0548949
+          3  |  -.0013835   .0308563    -0.04   0.964    -.0618976    .0591306
+          4  |   -.034697   .0435419    -0.80   0.426    -.1200896    .0506956
+             |
+         tod |
+          1  |  -.0233413   .0224793    -1.04   0.299    -.0674269    .0207443
+          2  |  -.0028371   .0173428    -0.16   0.870    -.0368491    .0311749
+          3  |    .012657    .017902     0.71   0.480    -.0224517    .0477656
+             |
+         dow |
+          1  |  -.0217108   .0259352    -0.84   0.403     -.072574    .0291523
+          2  |   .0134343   .0239061     0.56   0.574    -.0334495     .060318
+          3  |  -.0131445   .0236486    -0.56   0.578    -.0595232    .0332343
+          4  |   .0378429   .0233479     1.62   0.105    -.0079461    .0836318
+          5  |  -.0005287   .0219479    -0.02   0.981    -.0435722    .0425147
+          6  |   .0285475   .0223903     1.27   0.202    -.0153635    .0724586
+             |
+       _cons |   .6453027    .027905    23.12   0.000     .5905765    .7000289
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,  1984) =   17.76
+            Prob > F =    0.0000
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1984) =    1.95
+            Prob > F =    0.0989
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1984) =    1.14
+            Prob > F =    0.3310
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1984) =    1.67
+            Prob > F =    0.1250
+. estadd scalar dowVars = r(p)
+. estimates store model2
+. 
+. reg qual_rec_2 meaning shredded if india == 0, robust cluster(wid)
+
+Linear regression                                      Number of obs =    6777
+                                                       F(  2,  1155) =    9.53
+                                                       Prob > F      =  0.0001
+                                                       R-squared     =  0.0364
+                                                       Root MSE      =  .20953
+
+                                 (Std. Err. adjusted for 1156 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0390227   .0231531     1.69   0.092    -.0064042    .0844495
+    shredded |  -.0610106   .0274663    -2.22   0.027       -.1149   -.0071212
+       _cons |   .6506456   .0194994    33.37   0.000     .6123873    .6889039
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model3
+. 
+. reg qual_rec_2 meaning shredded sex img6to10 img11plus i.(image_name age_grp tod dow) if india == 0, robust cluster(wid)
+
+Linear regression                                      Number of obs =    6777
+                                                       F( 27,  1155) =    6.14
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1228
+                                                       Root MSE      =  .20028
+
+                                 (Std. Err. adjusted for 1156 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0390449   .0188262     2.07   0.038     .0021076    .0759823
+    shredded |   -.066107   .0230494    -2.87   0.004    -.1113304   -.0208836
+         sex |   .0144299   .0168768     0.86   0.393    -.0186828    .0475426
+    img6to10 |  -.0235836   .0080999    -2.91   0.004    -.0394758   -.0076915
+   img11plus |  -.1156904   .0286154    -4.04   0.000    -.1718344   -.0595464
+             |
+  image_name |
+          2  |   .0209638   .0064451     3.25   0.001     .0083185    .0336091
+          3  |   .0004037   .0071478     0.06   0.955    -.0136203    .0144277
+          4  |   .0065036   .0068936     0.94   0.346    -.0070217    .0200289
+          5  |   -.015288   .0066831    -2.29   0.022    -.0284004   -.0021757
+          6  |  -.0061473   .0067298    -0.91   0.361    -.0193512    .0070567
+          7  |   .0179346   .0065319     2.75   0.006     .0051189    .0307503
+          8  |   .0063106   .0068495     0.92   0.357    -.0071282    .0197494
+          9  |   .0411125   .0074145     5.54   0.000     .0265651    .0556599
+         10  |   .0131637   .0066669     1.97   0.049     .0000831    .0262442
+             |
+     age_grp |
+          1  |   .0593219   .0193001     3.07   0.002     .0214548     .097189
+          2  |   .0384041   .0262688     1.46   0.144    -.0131358     .089944
+          3  |   .0233342   .0360226     0.65   0.517     -.047343    .0940113
+          4  |  -.0441771    .050646    -0.87   0.383    -.1435455    .0551914
+             |
+         tod |
+          1  |  -.0479717   .0304097    -1.58   0.115    -.1076362    .0116927
+          2  |   -.012484   .0210269    -0.59   0.553    -.0537392    .0287713
+          3  |   .0056109   .0209709     0.27   0.789    -.0355344    .0467562
+             |
+         dow |
+          1  |   .0207375   .0358543     0.58   0.563    -.0496094    .0910845
+          2  |   .0167769    .034201     0.49   0.624    -.0503262    .0838799
+          3  |  -.0032116   .0324747    -0.10   0.921    -.0669275    .0605043
+          4  |   .0532963   .0297073     1.79   0.073      -.00499    .1115826
+          5  |   .0118487   .0283507     0.42   0.676    -.0437758    .0674733
+          6  |    .029257   .0300694     0.97   0.331    -.0297397    .0882537
+             |
+       _cons |   .6251925   .0371397    16.83   0.000     .5523238    .6980612
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,  1155) =    8.96
+            Prob > F =    0.0000
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1155) =    3.56
+            Prob > F =    0.0068
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1155) =    1.25
+            Prob > F =    0.2898
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1155) =    0.95
+            Prob > F =    0.4573
+. estadd scalar dowVars = r(p)
+. estimates store model4
+. 
+. reg qual_rec_2 meaning shredded if india == 1, robust cluster(wid)
+
+Linear regression                                      Number of obs =    5947
+                                                       F(  2,   828) =    3.98
+                                                       Prob > F      =  0.0191
+                                                       R-squared     =  0.0223
+                                                       Root MSE      =  .22569
+
+                                  (Std. Err. adjusted for 829 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |  -.0309963   .0249212    -1.24   0.214    -.0799125      .01792
+    shredded |  -.0872768   .0309511    -2.82   0.005    -.1480285    -.026525
+       _cons |   .6335987   .0180561    35.09   0.000     .5981576    .6690398
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model5
+. 
+. reg qual_rec_2 meaning shredded sex img6to10 img11plus i.(image_name age_grp tod dow) if india == 1, robust cluster(wid)
+
+Linear regression                                      Number of obs =    5947
+                                                       F( 27,   828) =   13.04
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1984
+                                                       Root MSE      =   .2048
+
+                                  (Std. Err. adjusted for 829 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |  -.0125495   .0213526    -0.59   0.557    -.0544612    .0293621
+    shredded |  -.0728482   .0230806    -3.16   0.002    -.1181516   -.0275448
+         sex |   .1004392   .0209732     4.79   0.000     .0592723    .1416061
+    img6to10 |  -.0164702   .0079747    -2.07   0.039    -.0321232   -.0008171
+   img11plus |  -.1480497   .0204515    -7.24   0.000    -.1881926   -.1079068
+             |
+  image_name |
+          2  |   .0156508   .0071668     2.18   0.029     .0015836    .0297179
+          3  |  -.0036534   .0067598    -0.54   0.589    -.0169217    .0096149
+          4  |   .0176876   .0066941     2.64   0.008     .0045481    .0308271
+          5  |  -.0183441   .0066139    -2.77   0.006    -.0313261   -.0053621
+          6  |  -.0137333   .0074196    -1.85   0.065    -.0282967    .0008301
+          7  |   .0143392    .006822     2.10   0.036     .0009488    .0277297
+          8  |  -.0072302   .0072061    -1.00   0.316    -.0213746    .0069141
+          9  |   .0370844   .0078912     4.70   0.000     .0215952    .0525736
+         10  |   .0019761   .0071129     0.28   0.781    -.0119853    .0159374
+             |
+     age_grp |
+          1  |   .0131647   .0194967     0.68   0.500    -.0251041    .0514335
+          2  |   -.011352   .0338955    -0.33   0.738    -.0778832    .0551793
+          3  |  -.0755979   .0473073    -1.60   0.110    -.1684542    .0172584
+          4  |   .0901304   .0691686     1.30   0.193    -.0456359    .2258968
+             |
+         tod |
+          1  |  -.0010445   .0314856    -0.03   0.974    -.0628454    .0607565
+          2  |   .0118428   .0277063     0.43   0.669    -.0425401    .0662257
+          3  |   .0219645   .0282531     0.78   0.437    -.0334916    .0774206
+             |
+         dow |
+          1  |  -.0583613   .0351502    -1.66   0.097    -.1273554    .0106327
+          2  |   .0003388   .0334274     0.01   0.992    -.0652737    .0659513
+          3  |  -.0266697   .0341808    -0.78   0.435    -.0937609    .0404215
+          4  |  -.0045148   .0370008    -0.12   0.903    -.0771412    .0681116
+          5  |  -.0191998   .0350216    -0.55   0.584    -.0879413    .0495418
+          6  |   .0264434    .033897     0.78   0.436    -.0400907    .0929776
+             |
+       _cons |   .5880162   .0419043    14.03   0.000      .505765    .6702673
+------------------------------------------------------------------------------
+. estadd beta
+. 
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,   828) =    9.62
+            Prob > F =    0.0000
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,   828) =    1.35
+            Prob > F =    0.2502
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,   828) =    0.37
+            Prob > F =    0.7776
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,   828) =    1.30
+            Prob > F =    0.2550
+. estadd scalar dowVars = r(p)
+. estimates store model6
+. 
+. * tab:quality_regs
+. esttab model1 model2 model3 model4 model5 model6 using "../output/tab_quality_regs_2.tex", cells(b(star fmt(3)) se(par fmt(3))) starlevels(* .05 ** .01 *** .001) stats(imgVars ageVars todVars dowVars N r2,fmt(2)
+> ) keep(meaning shredded india sex img6to10 img11plus *age_grp _cons) style(tex) replace addnotes("* .05 ** .01 *** .001" "Columns 1 and 2 include both countries, 3 and 4 only the US and 5 and 6 only India. Colum
+> ns 1, 3 and 5 only include treatments and country. Columns 2, 4, and 6 control for num of image and particular image, gender, age categories, time of day, and day of week.")
+(note: file ../output/tab_quality_regs_2.tex not found)
+(output written to ../output/tab_quality_regs_2.tex)
+. *"
+. estimates clear
+. 
+. replace qual_rec_5=qual_rec_5/100
+(12719 real changes made)
+. reg qual_rec_5 meaning shredded india, robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F(  3,  1984) =   14.05
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0341
+                                                       Root MSE      =  .16934
+
+                                 (Std. Err. adjusted for 1985 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0148095   .0082415     1.80   0.072    -.0013533    .0309724
+    shredded |  -.0540363   .0150117    -3.60   0.000    -.0834766    -.024596
+       india |  -.0254487   .0097451    -2.61   0.009    -.0445604   -.0063371
+       _cons |   .9291565   .0081152   114.50   0.000     .9132413    .9450717
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model1
+. 
+. reg qual_rec_5 meaning shredded india sex img6to10 img11plus i.(image_name age_grp tod dow), robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F( 28,  1984) =    4.88
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0582
+                                                       Root MSE      =  .16738
+
+                                 (Std. Err. adjusted for 1985 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0173494   .0083467     2.08   0.038     .0009802    .0337185
+    shredded |  -.0552034   .0146752    -3.76   0.000    -.0839838   -.0264229
+       india |  -.0288107   .0106782    -2.70   0.007    -.0497523   -.0078692
+         sex |   .0178944   .0119947     1.49   0.136     -.005629    .0414179
+    img6to10 |   .0008419   .0046007     0.18   0.855    -.0081808    .0098645
+   img11plus |  -.0394649   .0128221    -3.08   0.002    -.0646112   -.0143186
+             |
+  image_name |
+          2  |   .0029778   .0035313     0.84   0.399    -.0039477    .0099034
+          3  |   .0132664   .0042815     3.10   0.002     .0048697    .0216632
+          4  |   .0067289   .0036207     1.86   0.063    -.0003719    .0138297
+          5  |  -.0127294   .0039065    -3.26   0.001    -.0203906   -.0050681
+          6  |  -.0075755   .0042419    -1.79   0.074    -.0158945    .0007435
+          7  |  -.0016434   .0036883    -0.45   0.656    -.0088768      .00559
+          8  |   -.002462   .0040366    -0.61   0.542    -.0103784    .0054544
+          9  |  -.0026694   .0044553    -0.60   0.549    -.0114069    .0060681
+         10  |  -.0102314   .0040162    -2.55   0.011    -.0181078    -.002355
+             |
+     age_grp |
+          1  |   .0042073   .0102545     0.41   0.682    -.0159035     .024318
+          2  |   .0039776   .0165105     0.24   0.810    -.0284022    .0363574
+          3  |  -.0236881   .0314749    -0.75   0.452    -.0854154    .0380392
+          4  |   .0070399   .0257555     0.27   0.785    -.0434707    .0575505
+             |
+         tod |
+          1  |  -.0186788   .0199195    -0.94   0.349    -.0577442    .0203866
+          2  |   .0063715   .0139367     0.46   0.648    -.0209606    .0337035
+          3  |   .0085354   .0137969     0.62   0.536    -.0185225    .0355934
+             |
+         dow |
+          1  |    .014932   .0212582     0.70   0.483    -.0267587    .0566227
+          2  |   .0222518   .0208858     1.07   0.287    -.0187086    .0632121
+          3  |  -.0032945   .0230677    -0.14   0.886    -.0485339    .0419449
+          4  |   .0220627   .0208403     1.06   0.290    -.0188085    .0629339
+          5  |   .0233005   .0194956     1.20   0.232    -.0149335    .0615345
+          6  |   .0263283   .0191691     1.37   0.170    -.0112653    .0639219
+             |
+       _cons |   .9123816   .0249656    36.55   0.000     .8634201    .9613432
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,  1984) =    6.02
+            Prob > F =    0.0000
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1984) =    0.23
+            Prob > F =    0.9198
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1984) =    0.92
+            Prob > F =    0.4305
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1984) =    0.77
+            Prob > F =    0.5900
+. estadd scalar dowVars = r(p)
+. estimates store model2
+. 
+. reg qual_rec_5 meaning shredded if india == 0, robust cluster(wid)
+
+Linear regression                                      Number of obs =    6777
+                                                       F(  2,  1155) =    8.06
+                                                       Prob > F      =  0.0003
+                                                       R-squared     =  0.0349
+                                                       Root MSE      =   .1658
+
+                                 (Std. Err. adjusted for 1156 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0228592   .0106057     2.16   0.031     .0020505    .0436679
+    shredded |  -.0537493   .0227776    -2.36   0.018    -.0984395   -.0090592
+       _cons |   .9260818   .0094205    98.30   0.000     .9075986     .944565
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model3
+. 
+. reg qual_rec_5 meaning shredded sex img6to10 img11plus i.(image_name age_grp tod dow) if india == 0, robust cluster(wid)
+
+Linear regression                                      Number of obs =    6777
+                                                       F( 27,  1155) =    3.09
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0708
+                                                       Root MSE      =  .16299
+
+                                 (Std. Err. adjusted for 1156 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0237489   .0104811     2.27   0.024     .0031848    .0443129
+    shredded |  -.0574292   .0221579    -2.59   0.010    -.1009035   -.0139549
+         sex |  -.0039922   .0169959    -0.23   0.814    -.0373386    .0293542
+    img6to10 |  -.0084142   .0067389    -1.25   0.212     -.021636    .0048076
+   img11plus |  -.0444866   .0224203    -1.98   0.047    -.0884756   -.0004975
+             |
+  image_name |
+          2  |   .0049753   .0044508     1.12   0.264    -.0037573     .013708
+          3  |   .0112576   .0061341     1.84   0.067    -.0007776    .0232928
+          4  |   .0018865   .0050028     0.38   0.706    -.0079291     .011702
+          5  |  -.0094797   .0048176    -1.97   0.049     -.018932   -.0000275
+          6  |  -.0086097   .0051678    -1.67   0.096    -.0187491    .0015297
+          7  |  -.0047156   .0044316    -1.06   0.288    -.0134104    .0039793
+          8  |  -.0057005   .0047938    -1.19   0.235    -.0151061    .0037051
+          9  |  -.0061026   .0057726    -1.06   0.291    -.0174286    .0052235
+         10  |  -.0073093   .0050596    -1.44   0.149    -.0172363    .0026177
+             |
+     age_grp |
+          1  |   .0231555   .0157671     1.47   0.142      -.00778    .0540909
+          2  |   .0322351    .017599     1.83   0.067    -.0022945    .0667648
+          3  |  -.0253942   .0383369    -0.66   0.508     -.100612    .0498235
+          4  |   .0172017   .0326364     0.53   0.598    -.0468316    .0812349
+             |
+         tod |
+          1  |  -.0342349   .0277085    -1.24   0.217    -.0885995    .0201296
+          2  |   .0030251   .0178775     0.17   0.866    -.0320509    .0381011
+          3  |   .0134901   .0168863     0.80   0.425    -.0196412    .0466214
+             |
+         dow |
+          1  |   .0324601    .029217     1.11   0.267    -.0248643    .0897844
+          2  |   .0357658    .033958     1.05   0.292    -.0308605    .1023921
+          3  |   .0092295   .0343561     0.27   0.788    -.0581778    .0766368
+          4  |   .0289231   .0302655     0.96   0.339    -.0304584    .0883046
+          5  |   .0344496   .0283636     1.21   0.225    -.0212003    .0900995
+          6  |   .0241569   .0297863     0.81   0.418    -.0342845    .0825982
+             |
+       _cons |   .9043765   .0368059    24.57   0.000     .8321625    .9765905
+------------------------------------------------------------------------------
+. estadd beta
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,  1155) =    3.42
+            Prob > F =    0.0004
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,  1155) =    1.22
+            Prob > F =    0.3011
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,  1155) =    1.24
+            Prob > F =    0.2940
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,  1155) =    0.42
+            Prob > F =    0.8668
+. estadd scalar dowVars = r(p)
+. estimates store model4
+. 
+. reg qual_rec_5 meaning shredded if india == 1, robust cluster(wid)
+
+Linear regression                                      Number of obs =    5947
+                                                       F(  2,   828) =    5.60
+                                                       Prob > F      =  0.0039
+                                                       R-squared     =  0.0237
+                                                       Root MSE      =  .17322
+
+                                  (Std. Err. adjusted for 829 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0055854   .0126187     0.44   0.658     -.019183    .0303539
+    shredded |  -.0550915   .0185905    -2.96   0.003    -.0915816   -.0186015
+       _cons |    .907854   .0089691   101.22   0.000     .8902492    .9254588
+------------------------------------------------------------------------------
+. estadd beta
+. estimates store model5
+. 
+. reg qual_rec_5 meaning shredded sex img6to10 img11plus i.(image_name age_grp tod dow) if india == 1, robust cluster(wid)
+
+Linear regression                                      Number of obs =    5947
+                                                       F( 27,   828) =    3.58
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0673
+                                                       Root MSE      =  .16966
+
+                                  (Std. Err. adjusted for 829 clusters in wid)
+------------------------------------------------------------------------------
+             |               Robust
+  qual_rec_5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .0095703   .0135977     0.70   0.482    -.0171196    .0362602
+    shredded |   -.049523   .0175386    -2.82   0.005    -.0839483   -.0150977
+         sex |   .0414834   .0156506     2.65   0.008     .0107639    .0722028
+    img6to10 |   .0095952   .0064804     1.48   0.139    -.0031248    .0223153
+   img11plus |  -.0293216   .0120518    -2.43   0.015    -.0529772    -.005666
+             |
+  image_name |
+          2  |   .0000249    .005634     0.00   0.996    -.0110337    .0110835
+          3  |   .0159574   .0061218     2.61   0.009     .0039412    .0279735
+          4  |   .0132461   .0053222     2.49   0.013     .0027995    .0236927
+          5  |   -.015773   .0062753    -2.51   0.012    -.0280903   -.0034556
+          6  |  -.0056497   .0069704    -0.81   0.418    -.0193313     .008032
+          7  |     .00288   .0060245     0.48   0.633     -.008945    .0147051
+          8  |   .0016865   .0066729     0.25   0.801    -.0114113    .0147844
+          9  |   .0005004   .0069204     0.07   0.942    -.0130832    .0140841
+         10  |  -.0123547   .0063979    -1.93   0.054    -.0249126    .0002033
+             |
+     age_grp |
+          1  |  -.0114761   .0135053    -0.85   0.396    -.0379846    .0150325
+          2  |  -.0389434   .0349108    -1.12   0.265    -.1074676    .0295807
+          3  |   .0193474   .0212815     0.91   0.364    -.0224247    .0611195
+          4  |   .0032634   .0400047     0.08   0.935    -.0752592     .081786
+             |
+         tod |
+          1  |  -.0018238    .026338    -0.07   0.945    -.0535208    .0498732
+          2  |   .0113255   .0214706     0.53   0.598    -.0308177    .0534686
+          3  |   .0018369    .021901     0.08   0.933    -.0411512    .0448249
+             |
+         dow |
+          1  |   .0052522    .030345     0.17   0.863      -.05431    .0648144
+          2  |   .0130333   .0248546     0.52   0.600    -.0357523    .0618188
+          3  |  -.0166331    .027568    -0.60   0.546    -.0707446    .0374784
+          4  |   .0068121   .0279178     0.24   0.807    -.0479859    .0616101
+          5  |   .0141815   .0272699     0.52   0.603    -.0393449    .0677078
+          6  |   .0402636   .0211453     1.90   0.057     -.001241    .0817682
+             |
+       _cons |   .8782398   .0286194    30.69   0.000     .8220648    .9344149
+------------------------------------------------------------------------------
+. estadd beta
+. 
+. testparm i.image_name
+
+ ( 1)  2.image_name = 0
+ ( 2)  3.image_name = 0
+ ( 3)  4.image_name = 0
+ ( 4)  5.image_name = 0
+ ( 5)  6.image_name = 0
+ ( 6)  7.image_name = 0
+ ( 7)  8.image_name = 0
+ ( 8)  9.image_name = 0
+ ( 9)  10.image_name = 0
+
+       F(  9,   828) =    4.49
+            Prob > F =    0.0000
+. estadd scalar imgVars = r(p)
+. testparm i.age_grp
+
+ ( 1)  1.age_grp = 0
+ ( 2)  2.age_grp = 0
+ ( 3)  3.age_grp = 0
+ ( 4)  4.age_grp = 0
+
+       F(  4,   828) =    0.81
+            Prob > F =    0.5185
+. estadd scalar ageVars = r(p)
+. testparm i.tod
+
+ ( 1)  1.tod = 0
+ ( 2)  2.tod = 0
+ ( 3)  3.tod = 0
+
+       F(  3,   828) =    0.23
+            Prob > F =    0.8768
+. estadd scalar todVars = r(p)
+. testparm i.dow
+
+ ( 1)  1.dow = 0
+ ( 2)  2.dow = 0
+ ( 3)  3.dow = 0
+ ( 4)  4.dow = 0
+ ( 5)  5.dow = 0
+ ( 6)  6.dow = 0
+
+       F(  6,   828) =    2.72
+            Prob > F =    0.0126
+. estadd scalar dowVars = r(p)
+. estimates store model6
+. 
+. * tab:quality_regs
+. esttab model1 model2 model3 model4 model5 model6 using "../output/tab_quality_regs_5.tex", cells(b(star fmt(3)) se(par fmt(3))) starlevels(* .05 ** .01 *** .001) stats(imgVars ageVars todVars dowVars N r2,fmt(2)
+> ) keep(meaning shredded india sex img6to10 img11plus *age_grp _cons) style(tex) replace addnotes("* .05 ** .01 *** .001" "Columns 1 and 2 include both countries, 3 and 4 only the US and 5 and 6 only India. Colum
+> ns 1, 3 and 5 only include treatments and country. Columns 2, 4, and 6 control for num of image and particular image, gender, age categories, time of day, and day of week.")
+(note: file ../output/tab_quality_regs_5.tex not found)
+(output written to ../output/tab_quality_regs_5.tex)
+. *"
+. estimates clear
+. }
+
+. 
+. 
+. * #############
+. * Survey
+. * tab:surveyresults
+. * #############
+. if (1) {
+.         est clear
+.         foreach var in meaningful_level purpose_level enjoyment_level accomplishment_level recognition_level {
+  2.                 reg `var' meaning meaning_IND shredded shredded_IND india sex if tag_wid
+  3.                 eststo
+  4.         }
+
+      Source |       SS       df       MS              Number of obs =    1617
+-------------+------------------------------           F(  6,  1610) =   49.23
+       Model |  360.121232     6  60.0202053           Prob > F      =  0.0000
+    Residual |  1962.95855  1610  1.21922891           R-squared     =  0.1550
+-------------+------------------------------           Adj R-squared =  0.1519
+       Total |  2323.07978  1616  1.43754937           Root MSE      =  1.1042
+
+------------------------------------------------------------------------------
+meaningful~l |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |    1.12752   .0885072    12.74   0.000     .9539182    1.301121
+ meaning_IND |   -.695298   .1359901    -5.11   0.000    -.9620343   -.4285617
+    shredded |  -.0501767   .0880192    -0.57   0.569     -.222821    .1224676
+shredded_IND |  -.0463808   .1394866    -0.33   0.740    -.3199752    .2272135
+       india |   .5511831   .0999032     5.52   0.000      .355229    .7471372
+         sex |  -.0259345   .0578725    -0.45   0.654    -.1394479    .0875788
+       _cons |   3.320474   .0691283    48.03   0.000     3.184883    3.456065
+------------------------------------------------------------------------------
+(est1 stored)
+
+      Source |       SS       df       MS              Number of obs =    1615
+-------------+------------------------------           F(  6,  1608) =   61.53
+       Model |  428.036013     6  71.3393355           Prob > F      =  0.0000
+    Residual |  1864.25749  1608  1.15936411           R-squared     =  0.1867
+-------------+------------------------------           Adj R-squared =  0.1837
+       Total |   2292.2935  1614  1.42025619           Root MSE      =  1.0767
+
+------------------------------------------------------------------------------
+purpose_le~l |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   1.168933   .0863923    13.53   0.000     .9994793    1.338386
+ meaning_IND |  -.6960903   .1328754    -5.24   0.000    -.9567175   -.4354631
+    shredded |  -.1044097   .0861011    -1.21   0.225     -.273292    .0644725
+shredded_IND |  -.0162891   .1361563    -0.12   0.905    -.2833515    .2507733
+       india |   .6233021   .0979618     6.36   0.000     .4311558    .8154484
+         sex |  -.0331488   .0564336    -0.59   0.557    -.1438399    .0775422
+       _cons |   3.434037     .06767    50.75   0.000     3.301307    3.566768
+------------------------------------------------------------------------------
+(est2 stored)
+
+      Source |       SS       df       MS              Number of obs =    1618
+-------------+------------------------------           F(  6,  1611) =   32.11
+       Model |  240.216936     6  40.0361559           Prob > F      =  0.0000
+    Residual |  2008.70086  1611  1.24686584           R-squared     =  0.1068
+-------------+------------------------------           Adj R-squared =  0.1035
+       Total |   2248.9178  1617  1.39079641           Root MSE      =  1.1166
+
+------------------------------------------------------------------------------
+enjoyment_~l |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .3385912   .0894379     3.79   0.000     .1631643     .514018
+ meaning_IND |  -.3235522    .137597    -2.35   0.019    -.5934402   -.0536641
+    shredded |  -.0863775   .0891422    -0.97   0.333    -.2612245    .0884694
+shredded_IND |  -.0666773   .1410059    -0.47   0.636    -.3432516     .209897
+       india |   .8687517    .101311     8.58   0.000     .6700366    1.067467
+         sex |  -.2814144   .0584465    -4.81   0.000    -.3960536   -.1667752
+       _cons |   3.385876    .069894    48.44   0.000     3.248783    3.522968
+------------------------------------------------------------------------------
+(est3 stored)
+
+      Source |       SS       df       MS              Number of obs =    1616
+-------------+------------------------------           F(  6,  1609) =   41.94
+       Model |  284.076802     6  47.3461336           Prob > F      =  0.0000
+    Residual |  1816.40278  1609  1.12890166           R-squared     =  0.1352
+-------------+------------------------------           Adj R-squared =  0.1320
+       Total |  2100.47958  1615  1.30060655           Root MSE      =  1.0625
+
+------------------------------------------------------------------------------
+accomplish~l |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .7841838   .0852497     9.20   0.000     .6169716     .951396
+ meaning_IND |  -.5862357   .1309969    -4.48   0.000    -.8431782   -.3292933
+    shredded |  -.1652965   .0849044    -1.95   0.052    -.3318314    .0012383
+shredded_IND |   .1252069   .1342368     0.93   0.351    -.1380904    .3885042
+       india |   .6963925   .0963479     7.23   0.000     .5074119    .8853731
+         sex |  -.1490478   .0556287    -2.68   0.007    -.2581602   -.0399355
+       _cons |   3.635545   .0667649    54.45   0.000      3.50459    3.766501
+------------------------------------------------------------------------------
+(est4 stored)
+
+      Source |       SS       df       MS              Number of obs =    1617
+-------------+------------------------------           F(  6,  1610) =   16.12
+       Model |  126.956615     6  21.1594359           Prob > F      =  0.0000
+    Residual |  2113.86342  1610  1.31295865           R-squared     =  0.0567
+-------------+------------------------------           Adj R-squared =  0.0531
+       Total |  2240.82004  1616  1.38664606           Root MSE      =  1.1458
+
+------------------------------------------------------------------------------
+recognitio~l |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     meaning |   .4551164   .0919227     4.95   0.000     .2748156    .6354172
+ meaning_IND |  -.3077601   .1411074    -2.18   0.029    -.5845336   -.0309866
+    shredded |  -.0679714   .0914854    -0.74   0.458    -.2474144    .1114717
+shredded_IND |   .0228606   .1448278     0.16   0.875    -.2612103    .3069315
+       india |   .5279797    .103847     5.08   0.000     .3242901    .7316693
+         sex |  -.1023614   .0599531    -1.71   0.088    -.2199557     .015233
+       _cons |   3.575147   .0718566    49.75   0.000     3.434205     3.71609
+------------------------------------------------------------------------------
+(est5 stored)
+.         
+.         * tab:surveyresults
+.         esttab using "../output/tab_surveyresults.tex", cells(b(star fmt(3)) se(par fmt(3))) starlevels(* .05 ** .01 *** .001) stats(N r2,fmt(2)) keep(meaning meaning_IND shredded shredded_IND india sex _cons) s
+> tyle(tex) mlabels("Meaningful" "Purpose" "Enjoyment" "Accomplishment" "Recognition") replace addnotes("* .05 ** .01 *** .001" "Shows how survey responses differed by treatment, country, gender.")
+(note: file ../output/tab_surveyresults.tex not found)
+(output written to ../output/tab_surveyresults.tex)
+.         *"
+.         est clear
+. }
+
+. 
+. 
+. * ########################
+. * APPENDIX TABLES
+. * ########################
+. if (1) {        
+. * Following instructions matters
+.         if (1) {
+.                 reg qual_rec_2 used_1st used_last used_allzoom deleted_pts india sex img6to10 img11plus i.(image_name age_grp tod dow), robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F( 30,  1984) =   53.70
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.4593
+                                                       Root MSE      =  .16345
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+   qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |   .2298534    .013508    17.02   0.000      .203362    .2563448
+used_lastzoom |   .1605374   .0139324    11.52   0.000     .1332137    .1878611
+ used_allzoom |  -.0768892   .0165529    -4.65   0.000    -.1093521   -.0444263
+  deleted_pts |   .0787987    .009028     8.73   0.000     .0610934     .096504
+        india |  -.0073814   .0096111    -0.77   0.443    -.0262302    .0114674
+          sex |   .0252301   .0099648     2.53   0.011     .0056875    .0447727
+     img6to10 |   .0081998   .0043548     1.88   0.060    -.0003408    .0167403
+    img11plus |  -.0367998   .0117134    -3.14   0.002    -.0597716   -.0138279
+              |
+   image_name |
+           2  |   .0248068   .0046452     5.34   0.000     .0156969    .0339168
+           3  |  -.0033875   .0045242    -0.75   0.454    -.0122601    .0054851
+           4  |   .0119589   .0045074     2.65   0.008     .0031191    .0207986
+           5  |  -.0152292   .0044683    -3.41   0.001    -.0239923   -.0064661
+           6  |  -.0087933   .0044719    -1.97   0.049    -.0175635   -.0000232
+           7  |   .0172963    .004472     3.87   0.000      .008526    .0260667
+           8  |   .0044878   .0045099     1.00   0.320    -.0043568    .0133323
+           9  |   .0336977   .0047285     7.13   0.000     .0244245     .042971
+          10  |   .0105792   .0044563     2.37   0.018     .0018396    .0193187
+              |
+      age_grp |
+           1  |   .0289003   .0100055     2.89   0.004      .009278    .0485226
+           2  |   .0264265    .014873     1.78   0.076    -.0027417    .0555948
+           3  |   .0055519   .0239779     0.23   0.817    -.0414727    .0525765
+           4  |  -.0124052   .0287736    -0.43   0.666    -.0688348    .0440244
+              |
+          tod |
+           1  |  -.0225114   .0154575    -1.46   0.145    -.0528261    .0078032
+           2  |   .0097105   .0137035     0.71   0.479    -.0171642    .0365853
+           3  |   .0088903   .0137263     0.65   0.517    -.0180293    .0358098
+              |
+          dow |
+           1  |  -.0031987   .0196035    -0.16   0.870    -.0416443    .0352469
+           2  |   .0040957   .0197187     0.21   0.835    -.0345758    .0427672
+           3  |  -.0024349   .0194698    -0.13   0.900    -.0406182    .0357484
+           4  |   .0228669   .0184616     1.24   0.216    -.0133392    .0590731
+           5  |   .0184232   .0180584     1.02   0.308    -.0169923    .0538387
+           6  |   .0150692   .0186788     0.81   0.420    -.0215628    .0517013
+              |
+        _cons |   .3246543   .0225137    14.42   0.000     .2805014    .3688073
+-------------------------------------------------------------------------------
+.                 estadd beta
+.                 estadd local age = "yes"        
+.                 estadd local image = "yes"      
+.                 estadd local tod_dow = "yes"    
+.                 estimates store model1
+. 
+.                 areg qual_rec_2 used_1st used_last used_allzoom deleted_pts img6to10 img11plus i.image_name, robust cluster(wid) absorb(wid)
+
+Linear regression, absorbing indicators           Number of obs   =      12724
+                                                  F(  15,   1984) =      57.26
+                                                  Prob > F        =     0.0000
+                                                  R-squared       =     0.9037
+                                                  Adj R-squared   =     0.8858
+                                                  Root MSE        =     0.0750
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+   qual_rec_2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |   .1130248   .0069858    16.18   0.000     .0993246     .126725
+used_lastzoom |   .0572393   .0077326     7.40   0.000     .0420743    .0724043
+ used_allzoom |  -.0406957   .0080863    -5.03   0.000    -.0565542   -.0248372
+  deleted_pts |   .0088584   .0027245     3.25   0.001     .0035153    .0142015
+     img6to10 |  -.0107488   .0025305    -4.25   0.000    -.0157115   -.0057861
+    img11plus |  -.0506644   .0054482    -9.30   0.000    -.0613491   -.0399797
+              |
+   image_name |
+           2  |   .0225825   .0035243     6.41   0.000     .0156708    .0294942
+           3  |    .000107   .0029771     0.04   0.971    -.0057316    .0059455
+           4  |   .0125887   .0034249     3.68   0.000      .005872    .0193053
+           5  |  -.0132639   .0030622    -4.33   0.000    -.0192694   -.0072585
+           6  |  -.0065672   .0032157    -2.04   0.041    -.0128736   -.0002607
+           7  |   .0194699   .0030302     6.43   0.000     .0135271    .0254127
+           8  |    .002478   .0032699     0.76   0.449    -.0039347    .0088908
+           9  |   .0347137   .0035309     9.83   0.000     .0277891    .0416383
+          10  |   .0061634   .0031767     1.94   0.052    -.0000665    .0123934
+              |
+        _cons |   .5333914   .0060788    87.75   0.000     .5214699     .545313
+--------------+----------------------------------------------------------------
+          wid |   absorbed                                    (1985 categories)
+.                 estadd beta
+.                 estadd local FE = "yes"
+.                 estimates store model2
+.                 
+.                 reg std_qual_rec_5 used_1st used_last used_allzoom deleted_pts india sex img6to10 img11plus i.(image_name age_grp tod dow), robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F( 30,  1984) =   11.20
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1695
+                                                       Root MSE      =  .91242
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+std_qual_re~5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |   .6054235   .0832381     7.27   0.000     .4421803    .7686667
+used_lastzoom |   .6112981    .082206     7.44   0.000     .4500789    .7725173
+ used_allzoom |  -.4170791   .0904659    -4.61   0.000    -.5944972   -.2396609
+  deleted_pts |   .4503888    .061784     7.29   0.000     .3292203    .5715572
+        india |  -.0188844   .0605955    -0.31   0.755    -.1377219    .0999531
+          sex |   .0339239   .0671419     0.51   0.613    -.0977521    .1655999
+     img6to10 |   .1078254   .0219924     4.90   0.000     .0646949     .150956
+    img11plus |   .1020052   .0620563     1.64   0.100    -.0196971    .2237075
+              |
+   image_name |
+           2  |    .026745   .0211717     1.26   0.207    -.0147762    .0682662
+           3  |   .0759347   .0244298     3.11   0.002      .028024    .1238453
+           4  |   .0399278   .0208976     1.91   0.056    -.0010556    .0809113
+           5  |  -.0713198   .0230455    -3.09   0.002    -.1165157   -.0261239
+           6  |  -.0413528   .0238875    -1.73   0.084       -.0882    .0054944
+           7  |  -.0059121   .0216392    -0.27   0.785      -.04835    .0365259
+           8  |  -.0110729   .0233285    -0.47   0.635     -.056824    .0346781
+           9  |  -.0271662   .0258038    -1.05   0.293    -.0777716    .0234391
+          10  |  -.0489324    .023344    -2.10   0.036    -.0947137   -.0031511
+              |
+      age_grp |
+           1  |   .0182824    .055567     0.33   0.742    -.0906934    .1272581
+           2  |   .0651812    .090281     0.72   0.470    -.1118743    .2422367
+           3  |  -.1020322   .1717881    -0.59   0.553    -.4389362    .2348718
+           4  |   .0576001   .1326047     0.43   0.664    -.2024589    .3176591
+              |
+          tod |
+           1  |  -.1082586   .1050922    -1.03   0.303    -.3143612    .0978441
+           2  |   .0612027   .0800961     0.76   0.445    -.0958787    .2182841
+           3  |    .030529   .0777498     0.39   0.695    -.1219507    .1830088
+              |
+          dow |
+           1  |   .1053598   .1135449     0.93   0.354      -.11732    .3280396
+           2  |   .0796407   .1155269     0.69   0.491    -.1469261    .3062075
+           3  |   .0162371   .1277238     0.13   0.899    -.2342497    .2667239
+           4  |   .0774604   .1118589     0.69   0.489    -.1419128    .2968336
+           5  |   .1902778   .1100556     1.73   0.084    -.0255589    .4061145
+           6  |   .1190804   .1061947     1.12   0.262    -.0891845    .3273452
+              |
+        _cons |  -1.022664    .165345    -6.19   0.000    -1.346932   -.6983964
+-------------------------------------------------------------------------------
+.                 estadd beta
+.                 estadd local age = "yes"        
+.                 estadd local image = "yes"      
+.                 estadd local tod_dow = "yes"    
+.                 estimates store model3
+. 
+.                 areg std_qual_rec_5 used_1st used_last used_allzoom deleted_pts img6to10 img11plus i.image_name, robust cluster(wid) absorb(wid)
+
+Linear regression, absorbing indicators           Number of obs   =      12724
+                                                  F(  15,   1984) =      18.27
+                                                  Prob > F        =     0.0000
+                                                  R-squared       =     0.8955
+                                                  Adj R-squared   =     0.8761
+                                                  Root MSE        =     0.3520
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+std_qual_re~5 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |   .2117556   .0328945     6.44   0.000     .1472442     .276267
+used_lastzoom |    .153825   .0352742     4.36   0.000     .0846467    .2230033
+ used_allzoom |  -.1341598   .0363781    -3.69   0.000     -.205503   -.0628165
+  deleted_pts |   .0589733   .0183657     3.21   0.001     .0229553    .0949914
+     img6to10 |  -.0048282    .009594    -0.50   0.615    -.0236436    .0139873
+    img11plus |  -.1206268   .0282635    -4.27   0.000     -.176056   -.0651977
+              |
+   image_name |
+           2  |   .0369465   .0150305     2.46   0.014     .0074694    .0664236
+           3  |   .1029892   .0135492     7.60   0.000     .0764171    .1295614
+           4  |   .0512536   .0133298     3.85   0.000     .0251116    .0773955
+           5  |  -.0571275   .0152086    -3.76   0.000    -.0869539   -.0273011
+           6  |  -.0230934   .0152229    -1.52   0.129    -.0529479    .0067611
+           7  |   .0080977   .0136298     0.59   0.553    -.0186326     .034828
+           8  |  -.0006624    .014379    -0.05   0.963     -.028862    .0275372
+           9  |  -.0123211   .0162657    -0.76   0.449    -.0442206    .0195785
+          10  |  -.0390994   .0157347    -2.48   0.013    -.0699577   -.0082412
+              |
+        _cons |  -.1861837   .0317851    -5.86   0.000    -.2485194    -.123848
+--------------+----------------------------------------------------------------
+          wid |   absorbed                                    (1985 categories)
+.                 estadd beta
+.                 estadd local FE = "yes" 
+.                 estimates store model4
+. 
+.                 reg std_qual_avgdist used_1st used_last used_allzoom deleted_pts india sex img6to10 img11plus i.(image_name age_grp tod dow), robust cluster(wid)
+
+Linear regression                                      Number of obs =   12724
+                                                       F( 30,  1984) =   33.34
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.4113
+                                                       Root MSE      =  .76817
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+std_qual_av~t |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |  -1.027196   .0756333   -13.58   0.000    -1.175525   -.8788668
+used_lastzoom |  -.7466778   .0714494   -10.45   0.000    -.8868014   -.6065541
+ used_allzoom |   .4788338   .0840759     5.70   0.000     .3139474    .6437202
+  deleted_pts |   -.376404   .0522233    -7.21   0.000    -.4788223   -.2739858
+        india |  -.0372155   .0533926    -0.70   0.486    -.1419269    .0674959
+          sex |  -.1016501    .058246    -1.75   0.081    -.2158798    .0125795
+     img6to10 |  -.0245029   .0190029    -1.29   0.197    -.0617706    .0127649
+    img11plus |   .2156067   .0614981     3.51   0.000     .0949991    .3362143
+              |
+   image_name |
+           2  |  -.1092621   .0184399    -5.93   0.000    -.1454257   -.0730984
+           3  |  -.0014249    .020758    -0.07   0.945    -.0421347    .0392849
+           4  |  -.0800034   .0189179    -4.23   0.000    -.1171045   -.0429023
+           5  |    .076148   .0194344     3.92   0.000      .038034     .114262
+           6  |  -.0482184   .0189765    -2.54   0.011    -.0854344   -.0110025
+           7  |  -.0250136   .0198987    -1.26   0.209    -.0640382    .0140111
+           8  |   -.091951   .0195465    -4.70   0.000    -.1302848   -.0536172
+           9  |  -.1611995   .0204938    -7.87   0.000    -.2013911   -.1210078
+          10  |  -.0672237   .0204203    -3.29   0.001    -.1072712   -.0271761
+              |
+      age_grp |
+           1  |  -.1212547   .0502847    -2.41   0.016    -.2198711   -.0226382
+           2  |  -.1103945   .0783516    -1.41   0.159    -.2640546    .0432656
+           3  |   .0477894   .1445608     0.33   0.741    -.2357176    .3312964
+           4  |   .0337153    .138445     0.24   0.808    -.2377975    .3052282
+              |
+          tod |
+           1  |   .0870593    .086487     1.01   0.314    -.0825556    .2566742
+           2  |  -.0666716   .0659371    -1.01   0.312    -.1959849    .0626417
+           3  |  -.0453717   .0654952    -0.69   0.489    -.1738183     .083075
+              |
+          dow |
+           1  |   .0299233   .1098553     0.27   0.785    -.1855205     .245367
+           2  |   -.070984   .1013663    -0.70   0.484    -.2697795    .1278115
+           3  |  -.0378195   .1089684    -0.35   0.729     -.251524     .175885
+           4  |  -.1130891   .0962908    -1.17   0.240    -.3019309    .0757527
+           5  |  -.1269321    .095832    -1.32   0.185     -.314874    .0610098
+           6  |  -.0743135   .0969322    -0.77   0.443     -.264413    .1157861
+              |
+        _cons |   1.362175   .1318666    10.33   0.000     1.103563    1.620787
+-------------------------------------------------------------------------------
+.                 estadd beta
+.                 estadd local age = "yes"        
+.                 estadd local image = "yes"      
+.                 estadd local tod_dow = "yes"    
+.                 estimates store model5
+. 
+.                 areg std_qual_avgdist used_1st used_last used_allzoom deleted_pts img6to10 img11plus i.image_name, robust cluster(wid) absorb(wid)
+
+Linear regression, absorbing indicators           Number of obs   =      12724
+                                                  F(  15,   1984) =      64.48
+                                                  Prob > F        =     0.0000
+                                                  R-squared       =     0.9172
+                                                  Adj R-squared   =     0.9018
+                                                  Root MSE        =     0.3134
+
+                                  (Std. Err. adjusted for 1985 clusters in wid)
+-------------------------------------------------------------------------------
+              |               Robust
+std_qual_av~t |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+ used_1stzoom |   -.484069   .0301511   -16.05   0.000    -.5432002   -.4249379
+used_lastzoom |  -.2648051   .0308339    -8.59   0.000    -.3252753   -.2043349
+ used_allzoom |   .2258293   .0322438     7.00   0.000      .162594    .2890646
+  deleted_pts |  -.0443964   .0125311    -3.54   0.000     -.068972   -.0198208
+     img6to10 |    .041099   .0105018     3.91   0.000     .0205034    .0616947
+    img11plus |    .233208   .0276473     8.44   0.000     .1789872    .2874288
+              |
+   image_name |
+           2  |   -.101243   .0139503    -7.26   0.000    -.1286018   -.0738842
+           3  |  -.0247433   .0116263    -2.13   0.033    -.0475444   -.0019422
+           4  |  -.0948301   .0131141    -7.23   0.000     -.120549   -.0691113
+           5  |   .0578026   .0119859     4.82   0.000     .0342963    .0813089
+           6  |  -.0652241   .0125427    -5.20   0.000    -.0898222   -.0406259
+           7  |  -.0546134   .0127164    -4.29   0.000    -.0795523   -.0296745
+           8  |  -.0940279   .0131099    -7.17   0.000    -.1197384   -.0683173
+           9  |  -.1760774   .0151316   -11.64   0.000    -.2057529   -.1464019
+          10  |   -.068111   .0124464    -5.47   0.000    -.0925205   -.0437016
+              |
+        _cons |    .399135   .0261963    15.24   0.000       .34776    .4505101
+--------------+----------------------------------------------------------------
+          wid |   absorbed                                    (1985 categories)
+.                 estadd beta
+.                 estimates store model6
+.                 estadd local FE = "yes" 
+.                 
+.                 * tab:qualpredictors
+.                 * Note: This is not included
+.                 esttab model1 model2 model3 model4 model5 model6 using "../output/QualityPredictors.tex", mlabels("Recall 2" "Recall 2" "Recall 5" "Recall 5" "Avg Dist" "Avg Dist") cells(b(star fmt(3)) se(par fm
+> t(3))) starlevels(* .05 ** .01 *** .001) stats(age image tod_dow FE N r2,fmt(2)) keep(used_1stzoom used_lastzoom used_allzoom deleted_pts img6to10 img11plus india sex) style(tex) replace addnotes("* .05 ** .01 *
+> ** .001" "Here was see how user behavior predicts various quality measures. Columns 2, 4, and 6 include fixed effects.")
+(note: file ../output/QualityPredictors.tex not found)
+(output written to ../output/QualityPredictors.tex)
+.                 *"
+.                 estimates clear
+.         }
+. 
+. }
+
+. 
+. 
+. 
+end of do-file
+
+. do "figs_graphs.do"
+
+. * ----------------------------
+. * Figures and graphs
+. * -----------------------------
+. 
+. * Box plots
+. if (0) {
+.         * Quality by treatment
+.         graph box qual_rec_2 qual_rec_5 qual_rec_10, over(trt)
+.         * fig:boxplot_qual
+.         graph export "../output/BoxPlot-quality.eps", replace
+. 
+.         graph box std_qual_rec_2 std_qual_rec_5 std_qual_rec_10, over(trt)
+.         * fig:boxplot_qualCOP
+.         graph export "../output/BoxPlot-quality-std.eps", replace
+.         
+.         * Quantity by treatment
+.         graph box num_imgs, over(trt)
+.         * fig:boxplot_quan
+.         graph export "../output/BoxPlot-numimgs.eps", replace
+. }
+
+. 
+end of do-file
+
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\_GIT\bmwm_private\for_git\code\../logs/analysis.txt
+  log type:  text
+ closed on:   3 Apr 2013, 16:46:24
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
